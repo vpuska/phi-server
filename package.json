@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "phi-load:dev": "nest start --entryFile \"phi-load\"",
+    "phi-load:dev": "nest start --entryFile \"phi-load/phi-load\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

@@ -19,7 +19,6 @@ import {pipeline} from 'node:stream/promises';
 import JSZip = require("jszip");
 import xtreamer = require("xtreamer");
 import xmljs = require("xml-js");
-import {fund_callback} from "./xml-lib";
 
 // URL of PHI data package
 const url = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
@@ -73,7 +72,7 @@ async function run() {
     console.log(files);
 
     // process each file
-    await unzip(zip, files[0], "Fund", fund_callback);
+    await unzip(zip, files[0], "Fund", () => {});
     //await unpack(zip, files[1], "Product", product_callback);
     //await unpack(zip, files[2], "Product", product_callback);
     //await unpack(zip, files[3], "Product", product_callback);
