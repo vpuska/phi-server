@@ -9,7 +9,7 @@
  * to work with.
  */
 
-type XML2JSObject = {
+export type XML2JSObject = {
     type: string;
     name: string;
     text?: string;
@@ -18,7 +18,7 @@ type XML2JSObject = {
 }
 
 
-class XMLElement {
+export class XMLElement {
 
     readonly type: string;
     readonly tag: string;
@@ -69,26 +69,3 @@ class XMLElement {
                 yield child;
     }
 }
-
-function dump(element, level=0) {
-    //console.log(element);
-    const spaces = "-".repeat(level * 4);
-    let text_element = false;
-    let text = "";
-    let content = element.hasOwnProperty("elements") ? element.elements : [];
-    if (content.length === 1 && content[0].type === "text") {
-        text_element = true;
-        text = content[0].text;
-        if (text.length > 40)
-            text = text.substring(0, 37) + "...";
-    }
-    let has_attributes = element.hasOwnProperty("attributes");
-    if (text_element)
-        console.log(`${spaces}name: ${element.name} [text=${text}]`);
-    else
-        console.log(`${spaces}name: ${element.name} [${element.type}] [attributes="${has_attributes}"] [elements=${content.length}]`)
-    if (!text_element)
-        for (const el of content)
-            dump(el, level + 1)
-}
-

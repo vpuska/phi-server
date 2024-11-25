@@ -19,6 +19,11 @@ import {pipeline} from 'node:stream/promises';
 import JSZip = require("jszip");
 import xtreamer = require("xtreamer");
 import xmljs = require("xml-js");
+import {NestFactory} from "@nestjs/core";
+import {AppModule} from "../app.module";
+import {FundsService} from "../funds/funds.service";
+import {INestApplicationContext} from "@nestjs/common";
+import {XML2JSObject} from "../libs/xml-lib";
 
 // URL of PHI data package
 const url = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
@@ -36,7 +41,7 @@ async function unzip(zip: JSZip, filename: string, tag: string, callback: Functi
 }
 
 
-async function run() {
+async function run(app: INestApplicationContext) {
     // fetch the data package description file (JSON) from data.gov.au;
     let response = await fetch(url);
     if (!response.ok) {
@@ -72,13 +77,19 @@ async function run() {
     console.log(files);
 
     // process each file
-    await unzip(zip, files[0], "Fund", () => {});
+    await unzip(zip, files[0], "Fund", (xml:XML2JSObject) => { app.get(FundsService).createFromXML(xml) });
     //await unpack(zip, files[1], "Product", product_callback);
     //await unpack(zip, files[2], "Product", product_callback);
     //await unpack(zip, files[3], "Product", product_callback);
 }
 
-console.log("Running...");
-run().then(()=> {
-    console.log("Done!");
+
+async function bootstrap() {
+    const app = await NestFactory.createApplicationContext(AppModule);
+    await run(app);
+}
+
+
+bootstrap().then(()=>{
+    console.log("--- Complete!")
 });
