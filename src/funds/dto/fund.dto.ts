@@ -1,4 +1,5 @@
 import {IsString, IsPostalCode, IsIn} from 'class-validator';
+import { CreateBrandDto } from './brand.dto';
 
 
 export class CreateFundDto {
@@ -12,7 +13,7 @@ export class CreateFundDto {
     description: string;
 
     @IsString()
-    address1?: string;
+    address1: string;
 
     @IsString()
     address2: string;
@@ -34,4 +35,6 @@ export class CreateFundDto {
     @IsString()
     @IsIn(["Open", "Restricted"])
     type: string;
+
+    brands?: CreateBrandDto[];
 }

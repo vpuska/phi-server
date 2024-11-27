@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Brand } from './brand.entity';
 
 @Entity({name: 'funds'})
 export class Fund {
@@ -31,4 +32,13 @@ export class Fund {
 
     @Column({length:16, nullable:true})
     type: string;
+
+    @OneToMany(
+        () => Brand,
+        (brand) => brand.fund,
+        {
+            cascade: true,
+        }
+    )
+    brands: Brand[];
 }

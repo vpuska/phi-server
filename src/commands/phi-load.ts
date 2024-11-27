@@ -19,10 +19,12 @@ import {pipeline} from 'node:stream/promises';
 import JSZip = require("jszip");
 import xtreamer = require("xtreamer");
 import xmljs = require("xml-js");
+
 import {NestFactory} from "@nestjs/core";
+import {INestApplicationContext} from "@nestjs/common";
+
 import {AppModule} from "../app.module";
 import {FundsService} from "../funds/funds.service";
-import {INestApplicationContext} from "@nestjs/common";
 import {XML2JSObject} from "../libs/xml-lib";
 
 // URL of PHI data package
@@ -77,10 +79,14 @@ async function run(app: INestApplicationContext) {
     console.log(files);
 
     // process each file
-    await unzip(zip, files[0], "Fund", (xml:XML2JSObject) => { app.get(FundsService).createFromXML(xml) });
+    const fundService = app.get(FundsService);
+
+    await unzip(zip, files[0], "Fund", (xml:XML2JSObject) => { fundService.createFromXML(xml) });
     //await unpack(zip, files[1], "Product", product_callback);
     //await unpack(zip, files[2], "Product", product_callback);
     //await unpack(zip, files[3], "Product", product_callback);
+
+    //await fundService.remove("MYO");
 }
 
 
