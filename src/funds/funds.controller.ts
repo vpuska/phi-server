@@ -5,6 +5,11 @@ import { FundsService } from './funds.service';
 export class FundsController {
     constructor(private readonly fundsService: FundsService) {}
 
+    @Get()
+    fundAll() {
+        return this.fundsService.findAll();
+    }
+
     @Get(':code')
     findOne(@Param('code') code: string) {
         return this.fundsService.findOne(code);

@@ -7,12 +7,9 @@ export class Brand {
     @PrimaryColumn({length:5})
     code: string;
 
-    @ManyToOne(
-        () => Fund,
-        (fund) => fund.brands,
-        {
-            createForeignKeyConstraints: true,
-            onDelete: 'CASCADE',
+    @ManyToOne(() => Fund, (fund) => fund.brands, {
+        createForeignKeyConstraints: true,
+        onDelete: 'CASCADE',
     })
     fund: Fund;
 

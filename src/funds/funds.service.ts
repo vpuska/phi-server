@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { XML2JSObject, XMLElement } from "../libs/xml-lib";
+
 import { Fund } from "./entities/fund.entity";
 import { CreateFundDto } from "./dto/fund.dto";
-import { XML2JSObject, XMLElement } from "../libs/xml-lib";
 import { CreateBrandDto } from './dto/brand.dto';
-import { Brand } from './entities/brand.entity';
+import { CreateDependantLimitDto } from './dto/dependant-limit.dto';
 
 
 @Injectable()
@@ -14,34 +15,36 @@ export class FundsService {
     constructor(
         @InjectRepository(Fund)
         private readonly fundRepository: Repository<Fund>,
-        @InjectRepository(Brand)
-        private readonly brandRepository: Repository<Brand>,
     ) { }
 
-    async findOne(code: string) {
-        const coffee = await this.fundRepository.findOne({
+    async findAll(brands=true, dependantLimits=true) : Promise<Fund[]> {
+        let query = this.fundRepository.createQueryBuilder('fund')
+            .innerJoinAndSelect('fund.brands', 'brand');
+        if (dependantLimits)
+            query = query.innerJoinAndSelect('fund.dependantLimits', 'dependantLimit');
+        if (!brands)
+            query = query.where('fund.code=brand.code')
+        return await query.getMany();
+    }
+
+    async findOne(code: string) : Promise<Fund> {
+        const fund = await this.fundRepository.findOne({
             where: {
                 code: code
             },
             relations: {
-                brands: true
+                brands: true,
+                dependantLimits: true,
             }
         });
-        if (!coffee)
+        if (!fund)
             throw new NotFoundException(`Fund ${code} not found`);
-        return coffee;
+        return fund;
     }
 
     async create(createFundDto: CreateFundDto): Promise<Fund> {
         const fund = this.fundRepository.create(createFundDto);
-        const record = await this.fundRepository.save(fund);
-
-        const brand = this.brandRepository.create({
-            fund,
-            ...createFundDto.brands[0]
-        });
-        await this.brandRepository.save(brand);
-        return record;
+        return await this.fundRepository.save(fund);
     }
 
     async createFromXML(xml2jsObject: XML2JSObject): Promise<Fund> {
@@ -77,12 +80,31 @@ export class FundsService {
             brandDto.website = brand.find("BrandWebsite").text;
             fundDto.brands.push(brandDto);
         }
+        const states = fundXml.find("States");
+        for (const state of states.findAll("State")) {
+            const field = `state${state.text}`;
+            if (fundDto.hasOwnProperty(field))
+                fundDto[field] = true
+            else
+                throw `Unknown state: '${state.text}'`
+        }
+        const restrictions = fundXml.find("Restrictions");
+        fundDto.restrictionDetails = restrictions.find("RestrictionDetails").text;
+        fundDto.restrictionHint = restrictions.find("RestrictionHint").text;
+        fundDto.restrictionDetails = restrictions.find("RestrictionParagraph").text;
 
+        const fundDependantsXml = fundXml.find("FundDependants");
+        fundDto.nonClassifiedDependantDescription = fundDependantsXml.find("NonClassifiedDependantDescription").text;
+        fundDto.dependantLimits = [];
+        for (const limitXml of fundDependantsXml.find("DependantLimits").findAll("DependantLimit")) {
+            const limitDto = new CreateDependantLimitDto();
+            limitDto.type = limitXml.attributes["Title"];
+            limitDto.supported = limitXml.attributes["Supported"] === "true";
+            limitDto.minAge = +limitXml.attributes["MinAge"];
+            limitDto.maxAge = +limitXml.attributes["MaxAge"];
+            fundDto.dependantLimits.push(limitDto)
+        }
+        console.log(fundDto.dependantLimits);
         return await this.create(fundDto);
-
-    }
-    async remove(id: string) {
-        const fund = await this.findOne(id);
-        return this.fundRepository.remove(fund);
     }
 }

@@ -1,6 +1,6 @@
-import {IsString, IsPostalCode, IsIn} from 'class-validator';
+import { IsString, IsPostalCode, IsIn, IsBoolean } from 'class-validator';
 import { CreateBrandDto } from './brand.dto';
-
+import { CreateDependantLimitDto } from './dependant-limit.dto';
 
 export class CreateFundDto {
     @IsString()
@@ -16,10 +16,10 @@ export class CreateFundDto {
     address1: string;
 
     @IsString()
-    address2: string;
+    address2?: string;
 
     @IsString()
-    address3: string;
+    address3?: string;
 
     @IsString()
     town: string;
@@ -36,5 +36,43 @@ export class CreateFundDto {
     @IsIn(["Open", "Restricted"])
     type: string;
 
+    @IsString()
+    restrictionHint?: string;
+
+    @IsString()
+    restrictionParagraph?: string;
+
+    @IsString()
+    restrictionDetails?: string;
+
+    @IsBoolean()
+    stateALL: boolean = false;
+
+    @IsBoolean()
+    stateNSW: boolean = false;
+
+    @IsBoolean()
+    stateVIC: boolean = false;
+
+    @IsBoolean()
+    stateQLD: boolean = false;
+
+    @IsBoolean()
+    stateSA: boolean = false;
+
+    @IsBoolean()
+    stateWA: boolean = false;
+
+    @IsBoolean()
+    stateTAS: boolean = false;
+
+    @IsBoolean()
+    stateNT: boolean = false;
+
+    @IsString()
+    nonClassifiedDependantDescription: string = "";
+
     brands?: CreateBrandDto[];
+
+    dependantLimits?: CreateDependantLimitDto[];
 }
