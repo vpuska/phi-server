@@ -104,7 +104,6 @@ export class FundsService {
             limitDto.maxAge = +limitXml.attributes["MaxAge"];
             fundDto.dependantLimits.push(limitDto)
         }
-        console.log(fundDto.dependantLimits);
         return await this.create(fundDto);
     }
 }

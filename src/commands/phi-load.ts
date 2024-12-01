@@ -76,8 +76,6 @@ async function run(app: INestApplicationContext) {
             files.push(zipEntry.name);
         }
     });
-    console.log(files);
-
     // process each file
     const fundService = app.get(FundsService);
 
