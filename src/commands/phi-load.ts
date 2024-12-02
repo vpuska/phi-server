@@ -26,6 +26,7 @@ import {INestApplicationContext} from "@nestjs/common";
 import {AppModule} from "../app.module";
 import {FundsService} from "../funds/funds.service";
 import {XML2JSObject} from "../libs/xml-lib";
+import {AppService} from "../app.service";
 
 // URL of PHI data package
 const url = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
@@ -91,9 +92,8 @@ async function run(app: INestApplicationContext) {
 async function bootstrap() {
     const app = await NestFactory.createApplicationContext(AppModule);
     await run(app);
+    console.log("--- Complete!");
 }
 
 
-bootstrap().then(()=>{
-    console.log("--- Complete!")
-});
+bootstrap().then(()=>{process.exit(0)});

@@ -68,7 +68,7 @@ export class Fund {
     @Column({default:false})
     stateNT: boolean;
 
-    @Column({length: 400})
+    @Column({length: 400, nullable:true})
     nonClassifiedDependantDescription: string;
 
     @OneToMany(() => Brand, (brand) => brand.fund, {

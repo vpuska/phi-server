@@ -4,39 +4,44 @@ import { AppService } from './app.service';
 import { FundsModule } from './funds/funds.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from "@nestjs/config";
+import * as process from "node:process";
 
-const sqlite3 = {
-    type: 'better-sqlite3',
-    database: process.env.DATABASE_FILENAME || 'database.sqlite3',
-    autoLoadEntities: true,
-    synchronize: true,
+
+function typeOrmSettings() {
+    const type: string = process.env.DATABASE;
+
+    if (type==='MARIADB') {
+        console.log('Using MARIADB');
+        return TypeOrmModule.forRoot({
+            type: 'mariadb',
+            host: process.env["MARIADB_HOST"] || 'localhost',
+            port: parseInt(process.env["MARIADB_PORT"]) || 3307,
+            database: process.env["MARIADB_DATABASE"],
+            username: process.env["MARIADB_USERNAME"],
+            password: process.env["MARIADB_PASSWORD"],
+            autoLoadEntities: true,
+            synchronize: true,
+        })
+    }
+
+    if (type==='SQLITE') {
+        console.log('Using SQLITE');
+        return TypeOrmModule.forRoot({
+            type: 'better-sqlite3',
+            database: process.env.SQLITE_DATABASE || 'database.sqlite3',
+            autoLoadEntities: true,
+            synchronize: true,
+        })
+    }
+
+    throw `Invalid database type: ${type}`;
 }
 
-const mariaDb = {
-    type: 'mariadb',
-    host: '192.168.0.6',
-    port: 3307,
-    database: 'phidev',
-    username: 'root',
-    password: 'Ham1sh.cat',
-    autoLoadEntities: true,
-    synchronize: true,
-}
 
 @Module({
     imports: [FundsModule,
         ConfigModule.forRoot(),
-        TypeOrmModule.forRoot({
-            type: 'mariadb',
-            host: 'puskanas.myqnapcloud.com',
-            port: 3307,
-            database: 'phidev',
-            username: 'root',
-            password: 'Ham1sh.cat',
-            autoLoadEntities: true,
-            synchronize: true,
-            flags: ['-LONG_PASSWORD']
-        }),
+        typeOrmSettings(),
     ],
     controllers: [AppController],
     providers: [AppService],
