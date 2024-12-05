@@ -28,7 +28,7 @@
     "@nestjs/mapped-types": "^2.0.6",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/typeorm": "^10.0.2",
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^9.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "jszip": "^3.10.1",

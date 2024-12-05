@@ -8,7 +8,7 @@ import * as process from "node:process";
 
 
 function typeOrmSettings() {
-    const type: string = process.env.DATABASE;
+    const type: string = process.env.DATABASE || "SQLITE";
 
     if (type==='MARIADB') {
         console.log('Using MARIADB');
