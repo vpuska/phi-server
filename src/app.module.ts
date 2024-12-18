@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { FundsModule } from './funds/funds.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from "@nestjs/config";
+import { ProductsModule } from './products/products.module';
+import { PhiLoadModule } from './phi-load/phi-load.module';
 import * as process from "node:process";
 
 
@@ -39,11 +41,15 @@ function typeOrmSettings() {
 
 
 @Module({
-    imports: [FundsModule,
+    imports: [
         ConfigModule.forRoot(),
         typeOrmSettings(),
+        FundsModule,
+        ProductsModule,
+        PhiLoadModule,
     ],
     controllers: [AppController],
     providers: [AppService],
 })
 export class AppModule {}
+

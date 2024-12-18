@@ -8,7 +8,7 @@ import { DependantLimit } from './entities/dependant-limit.entity';
 
 @Module({
     imports: [TypeOrmModule.forFeature([Fund, Brand, DependantLimit])],
-    exports: [TypeOrmModule],
+    exports: [TypeOrmModule, FundsService],
     providers: [FundsService],
     controllers: [FundsController],
 })
