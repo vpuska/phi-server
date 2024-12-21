@@ -1,5 +1,6 @@
-import {Entity, Column, PrimaryColumn, ManyToOne, JoinColumn} from 'typeorm';
+import {Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany} from 'typeorm';
 import {Fund} from "../../funds/entities/fund.entity";
+import {HealthService} from "./health-service.entity";
 
 
 @Entity({name: 'products'})
@@ -35,46 +36,50 @@ export class Product {
     @Column({length:3})
     state: string;
 
-    @Column({type:'int'})
+    @Column({type:'int', default:0})
     adultsCovered: number;
 
-    @Column({type:'boolean'})
+    @Column({type:'boolean', default: false})
     childCover: boolean;
 
-    @Column({type:'boolean'})
+    @Column({type:'boolean', default: false})
     studentCover: boolean;
 
-    @Column({type:'boolean'})
+    @Column({type:'boolean', default: false})
     nonClassifiedCovered: boolean;
 
-    @Column({type:'boolean'})
+    @Column({type:'boolean', default: false})
     nonStudentCover: boolean;
 
-    @Column({type:'boolean'})
+    @Column({type:'boolean', default: false})
     conditionalNonStudentCover: boolean;
 
-    @Column({type:'boolean'})
+    @Column({type:'boolean', default: false})
     disabilityCover: boolean;
 
-    @Column({type:'integer'})
+    @Column({type:'integer', default:0})
     excess: number;
 
-    @Column({type:'integer'})
+    @Column({type:'integer', default:0})
     excessPerAdmission: number;
 
-    @Column({type:'integer'})
+    @Column({type:'integer', default:0})
     excessPerPerson: number;
 
-    @Column({type:'integer'})
+    @Column({type:'integer', default:0})
     excessPerPolicy: number;
 
-    @Column({type:'decimal'})
+    @Column({type:'decimal', default:0})
     premium: number;
 
-    @Column({length:16})
+    @Column({length:16, nullable:true})
     hospitalTier: string;
 
-    @Column({ length:64})
+    @Column({ length:64, nullable:true})
     accommodationType: string;
 
+    @OneToMany(() => HealthService, (service) => service.product, {
+        cascade: true
+    })
+    services: HealthService[];
 }

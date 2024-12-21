@@ -26,7 +26,6 @@ async function bootstrap_phiload() {
     console.log("--- Complete!");
 }
 
-console.log(process.argv);
 if (process.argv.length < 3) {
     bootstrap_server();
 } else {
