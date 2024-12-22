@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FundsModule } from './funds/funds.module';
@@ -7,6 +7,8 @@ import { ConfigModule } from "@nestjs/config";
 import { ProductsModule } from './products/products.module';
 import { PhiLoadModule } from './phi-load/phi-load.module';
 import * as process from "node:process";
+import { NestFactory } from '@nestjs/core';
+import { PhiLoadService } from './phi-load/phi-load.service';
 
 
 function typeOrmSettings() {
@@ -51,5 +53,28 @@ function typeOrmSettings() {
     controllers: [AppController],
     providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
 
+    static async run_app_server() {
+        const app = await NestFactory.create(AppModule);
+        app.enableCors({
+            origin: true,
+            methods: ['GET']
+        });
+        app.useGlobalPipes(new ValidationPipe({     // <-- insert statement
+            transform: true,
+            whitelist: true,
+            forbidNonWhitelisted: true
+        }));
+        await app.listen(process.env.PORT ?? 3000);
+    }
+
+    static async run_phiload() {
+        const app = await NestFactory.createApplicationContext(AppModule);
+        const loader = app.get(PhiLoadService);
+        await loader.run();
+        console.log("--- Complete!");
+        process.exit(0);
+    }
+
+}

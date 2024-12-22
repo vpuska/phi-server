@@ -1,6 +1,7 @@
 import {Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany} from 'typeorm';
 import {Fund} from "../../funds/entities/fund.entity";
-import {HealthService} from "./health-service.entity";
+import { DependantLimit } from '../../funds/entities/dependant-limit.entity';
+import { BenefitsList } from './benefits-list.entity';
 
 
 @Entity({name: 'products'})
@@ -78,8 +79,12 @@ export class Product {
     @Column({ length:64, nullable:true})
     accommodationType: string;
 
-    @OneToMany(() => HealthService, (service) => service.product, {
-        cascade: true
+    @Column({length:512})
+    services: string;
+
+    @OneToMany(() => BenefitsList, (benefit) => benefit.product, {
+        cascade: true,
     })
-    services: HealthService[];
+    benefitLimits: BenefitsList[];
+
 }

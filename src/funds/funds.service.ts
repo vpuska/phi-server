@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { XML2JSObject, XMLElement } from "../libs/xml-lib";
+import { Xml2JsObject, XmlElement } from "../utils/xml";
 
 import { Fund } from "./entities/fund.entity";
 import { CreateFundDto } from "./dto/fund.dto";
@@ -47,8 +47,8 @@ export class FundsService {
         return await this.fundRepository.save(fund);
     }
 
-    async createFromXML(xml2jsObject: XML2JSObject): Promise<Fund> {
-        const fundXml = new XMLElement(xml2jsObject);
+    async createFromXML(xml2jsObject: Xml2JsObject): Promise<Fund> {
+        const fundXml = new XmlElement(xml2jsObject);
         const fundDto =  new CreateFundDto();
 
         fundDto.code = fundXml.find("FundCode").text;

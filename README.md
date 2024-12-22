@@ -7,7 +7,7 @@ This installation uses better-sqlite3, however, other SQL databases should work 
 1. Create an empty project directory.  
 ⚠️ If using WebStorm, ensure you select the "Empty Project" option.  Otherwise, later commands might fail.
 
-2. Run ```bash nest new .``` to create the template app.
+2. Run ```nest new .``` to create the template app.
 
 3. In addition to the default packages, install the following: 
     ```

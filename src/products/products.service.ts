@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { XML2JSObject, XMLElement } from "src/libs/xml-lib";
+import { Xml2JsObject, XmlElement } from "src/utils/xml";
 
 import { Product } from "src/products/entities/product.entity";
-import { CreateProductDto } from "./dto/product.dto";
-import {HealthService} from "./entities/health-service.entity";
-import {BenefitsList} from "./entities/benefits-list.entity";
+import { HealthService } from "./entities/health-service.entity";
+import { BenefitsList } from "./entities/benefits-list.entity";
 
 
 @Injectable()
@@ -21,64 +20,35 @@ export class ProductsService {
         private readonly benefitsRepository: Repository<BenefitsList>,
     ) { }
 
-    async create(createProductDto: CreateProductDto): Promise<Product> {
-        const product = this.productRepository.create(createProductDto);
-        return await this.productRepository.save(product);
+    async search(state: string, adults: number, children: boolean) {
+        return await this.productRepository.find({
+            where: {
+                state: state,
+                adultsCovered: adults,
+                childCover: children,
+            },
+        });
     }
 
-    async createFromXML2(xml2jsObject: XML2JSObject): Promise<Product> {
-        const productXml = new XMLElement(xml2jsObject);
-        const productDto = new CreateProductDto();
+    async createHealthService(key: string, type: "H" | "G", code: string) {
+        const service = this.healthServiceRepository.create();
+        service.key = key;
+        service.serviceType = type;
+        service.serviceCode = code;
+        await this.healthServiceRepository.save(service);
+    }
 
-        productDto.code = productXml.attributes["ProductCode"];
-        productDto.fundCode = productXml.find("FundCode").text;
-        productDto.name = productXml.find("Name").text;
-        productDto.type = productXml.find("ProductType").text;
-        productDto.productURL = productXml.find("ProductURL").text;
-        productDto.phisURL = productXml.find("PHISURL").text;
-        productDto.status = productXml.find("ProductStatus").text;
-        productDto.state = productXml.find("State").text;
-        productDto.excessPerPerson = + productXml.find("ExcessPerPerson").text;
-        productDto.excessPerAdmission = + productXml.find("ExcessPerAdmission").text;
-        productDto.excessPerPolicy = + productXml.find("ExcessPerPolicy").text;
-        productDto.hospitalTier = productXml.find("HospitalTier").text;
-        productDto.accommodationType = productXml.find("AccommodationType").text;
-
-        if (productDto.type !== "GeneralHealth") {
-            const hospitalXml = productXml.find("HospitalCover");
-            productDto.hospitalTier = hospitalXml.find("HospitalTier").text;
-            productDto.accommodationType = hospitalXml.find("Accommodation").text;
-        }
-
-        const whoIsCoveredXml = productXml.find("WhoIsCovered");
-        if (whoIsCoveredXml.attributes["OnlyOnePerson"]==="true") {
-            productDto.adultsCovered = 1
-        } else {
-            const coverageXml = whoIsCoveredXml.find("Coverage");
-            productDto.adultsCovered = + coverageXml.attributes["NumberOfAdults"]
-            for (const dependant of coverageXml.findAll("DependantCover")) {
-                if (dependant.attributes["Title"] === "Child")
-                    productDto.childCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "ConditionalNonStudent")
-                    productDto.conditionalNonStudentCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "Disability")
-                    productDto.disabilityCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "NonClassified")
-                    productDto.nonClassifiedCovered = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "NonStudent")
-                    productDto.nonStudentCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "Student")
-                    productDto.studentCover = dependant.attributes["Covered"] === "true";
-                else
-                    console.log("Invalid adult coverage:", dependant.attributes["Title"]);
+    async mapHealthService(type: string, serviceCode: string) : Promise<string> {
+        return (await this.healthServiceRepository.findOne({
+            where: {
+                serviceType: type,
+                serviceCode: serviceCode
             }
-        }
-
-        return await this.create(productDto);
+        })).key;
     }
 
-    async createFromXML(xml2jsObject: XML2JSObject): Promise<Product> {
-        const productXml = new XMLElement(xml2jsObject);
+    async createFromXML(xml2jsObject: Xml2JsObject): Promise<Product> {
+        const productXml = new XmlElement(xml2jsObject);
         const product = this.productRepository.create();
 
         product.code = productXml.attributes["ProductCode"];
@@ -89,11 +59,13 @@ export class ProductsService {
         product.phisURL = productXml.find("PHISURL").text;
         product.status = productXml.find("ProductStatus").text;
         product.state = productXml.find("State").text;
-        product.excessPerPerson = +productXml.find("ExcessPerPerson").text;
-        product.excessPerAdmission = +productXml.find("ExcessPerAdmission").text;
-        product.excessPerPolicy = +productXml.find("ExcessPerPolicy").text;
         product.hospitalTier = productXml.find("HospitalTier").text;
         product.accommodationType = productXml.find("AccommodationType").text;
+        product.premium = +productXml.find("PremiumNoRebate").text;
+        product.excessPerPerson = +productXml.find("Excesses")?.find("ExcessPerPerson").text || 0;
+        product.excessPerAdmission = +productXml.find("Excesses")?.find("ExcessPerAdmission").text || 0;
+        product.excessPerPolicy = +productXml.find("Excesses")?.find("ExcessPerPolicy").text || 0;
+        product.excess = Math.max ( product.excessPerPerson, product.excessPerAdmission, product.excessPerPolicy );
 
         if (product.type !== "GeneralHealth") {
             const hospitalXml = productXml.find("HospitalCover");
@@ -124,45 +96,40 @@ export class ProductsService {
                     console.log("Invalid adult coverage:", dependant.attributes["Title"]);
             }
         }
-        await this.productRepository.save(product);
-
-        const services: HealthService[] = []
-        const benefits: BenefitsList[] = []
+        product.services = "";
 
         for (const serviceXML of productXml.find("HospitalCover")?.find("MedicalServices")?.findAll("MedicalService")) {
-            const service = this.healthServiceRepository.create();
-            service.productCode = product.code;
-            service.serviceType = "H";
-            service.serviceCode = serviceXML.attributes["Title"];
-            service.covered = serviceXML.attributes["Cover"][0];
-            services.push(service);
+            const covered = serviceXML.attributes["Cover"];
+            const title = serviceXML.attributes["Title"];
+            const modifier = (covered==="Restricted") ? "-" : "";
+            if (covered !== "NotCovered") {
+                const key = await this.mapHealthService("H", title);
+                product.services = product.services + key + modifier + ";"
+            }
         }
+
+        product.benefitLimits = [];
 
         for (const serviceXML of productXml.find("GeneralHealthCover")?.find("GeneralHealthServices")?.findAll("GeneralHealthService")) {
-            const service = this.healthServiceRepository.create();
-            service.productCode = product.code;
-            service.serviceType = "G";
-            service.serviceCode = serviceXML.attributes["Title"];
-            service.covered = (serviceXML.attributes["Covered"] === "true") ? "C" : "N";
-            services.push(service);
+            if (serviceXML.attributes["Covered"] === "true") {
+                const title = serviceXML.attributes["Title"];
+                const key = await this.mapHealthService("G", title);
+                product.services = product.services + key + ";"
 
-            for (const stateXML of serviceXML.findAll("BenefitsList"))
-                for (const benefitXML of stateXML.findAll("Benefit")) {
-                    const benefit = this.benefitsRepository.create();
-                    benefit.productCode = product.code;
-                    benefit.serviceType = "G";
-                    benefit.serviceCode = service.serviceCode;
-                    benefit.state = stateXML.attributes["State"];
-                    benefit.itemCode = benefitXML.attributes["Item"];
-                    benefit.benefitType = benefitXML.attributes["Type"];
-                    benefit.benefitAmount = + benefitXML.text;
-                    benefits.push(benefit);
-                }
+                for (const stateXML of serviceXML.findAll("BenefitsList"))
+                    for (const benefitXML of stateXML.findAll("Benefit")) {
+                        const benefit = this.benefitsRepository.create();
+                        benefit.productCode = product.code;
+                        benefit.serviceKey = key;
+                        benefit.state = stateXML.attributes["State"];
+                        benefit.itemCode = benefitXML.attributes["Item"];
+                        benefit.benefitType = benefitXML.attributes["Type"];
+                        benefit.benefitAmount = +benefitXML.text;
+                        product.benefitLimits.push(benefit);
+                    }
+            }
         }
 
-        await this.healthServiceRepository.save(services);
-        await this.benefitsRepository.save(benefits);
-
-        return product;
+       return this.productRepository.save(product);
     }
 }
