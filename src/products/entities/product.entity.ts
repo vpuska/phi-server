@@ -1,7 +1,5 @@
 import {Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany} from 'typeorm';
 import {Fund} from "../../funds/entities/fund.entity";
-import { DependantLimit } from '../../funds/entities/dependant-limit.entity';
-import { BenefitsList } from './benefits-list.entity';
 
 
 @Entity({name: 'products'})
@@ -24,12 +22,6 @@ export class Product {
 
     @Column({length:16})
     type: string;  // Hospital, GeneralHealth, Combined
-
-    @Column({length:512, nullable:true})
-    productURL: string;
-
-    @Column({length:512, nullable:true})
-    phisURL: string;
 
     @Column({length:8})
     status: string;  // Open, Closed
@@ -73,6 +65,9 @@ export class Product {
     @Column({type:'decimal', default:0})
     premium: number;
 
+    @Column({type:'decimal', default:0})
+    hospitalComponent: number;
+
     @Column({length:16, nullable:true})
     hospitalTier: string;
 
@@ -82,9 +77,6 @@ export class Product {
     @Column({length:512})
     services: string;
 
-    @OneToMany(() => BenefitsList, (benefit) => benefit.product, {
-        cascade: true,
-    })
-    benefitLimits: BenefitsList[];
-
+    @Column({type:'text', nullable:true})
+    xml: string;
 }

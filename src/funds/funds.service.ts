@@ -1,13 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Xml2JsObject, XmlElement } from "../utils/xml";
+import { XmlElement } from "../utils/xml";
 
 import { Fund } from "./entities/fund.entity";
 import { CreateFundDto } from "./dto/fund.dto";
 import { CreateBrandDto } from './dto/brand.dto';
 import { CreateDependantLimitDto } from './dto/dependant-limit.dto';
-
 
 @Injectable()
 export class FundsService {
@@ -47,8 +46,8 @@ export class FundsService {
         return await this.fundRepository.save(fund);
     }
 
-    async createFromXML(xml2jsObject: Xml2JsObject): Promise<Fund> {
-        const fundXml = new XmlElement(xml2jsObject);
+    async createFromXML(xml:any): Promise<Fund> {
+        const fundXml = XmlElement.fromXML(xml);
         const fundDto =  new CreateFundDto();
 
         fundDto.code = fundXml.find("FundCode").text;
@@ -61,6 +60,7 @@ export class FundsService {
         fundDto.state = fundXml.find("Address").find("State").text;
         fundDto.postcode = fundXml.find("Address").find("Postcode").text;
         fundDto.type = fundXml.find("FundType").text;
+        fundDto.xml = xml.toString()
 
         let brandDto = new CreateBrandDto();
         brandDto.code = fundDto.code;

@@ -1,4 +1,4 @@
-import {IsString, IsIn, IsBoolean, IsUrl, IsInt, IsDecimal} from 'class-validator';
+import {IsString, IsIn, IsBoolean, IsInt, IsDecimal} from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
@@ -13,12 +13,6 @@ export class CreateProductDto {
     @IsString()
     @IsIn(["Hospital", "GeneralHealth", "Combined"])
     type: string;
-
-    @IsUrl()
-    productURL: string;
-
-    @IsUrl()
-    phisURL: string;
 
     @IsString()
     @IsIn(["Open", "Closed"])
@@ -63,6 +57,9 @@ export class CreateProductDto {
 
     @IsDecimal()
     premium?: number = 0;
+
+    @IsDecimal()
+    hospitalComponent?: number = 0;
 
     @IsString()
     @IsIn(["Gold", "Silver", "SilverPlus", "Bronze", "BronzePlus", "BasicPlus", "Basic"])

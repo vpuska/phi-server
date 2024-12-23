@@ -71,6 +71,9 @@ export class Fund {
     @Column({length: 400, nullable:true})
     nonClassifiedDependantDescription: string;
 
+    @Column({type: "text", nullable:true})
+    xml: string;
+
     @OneToMany(() => Brand, (brand) => brand.fund, {
         cascade: true,
     })

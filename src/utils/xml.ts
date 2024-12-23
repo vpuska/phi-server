@@ -9,7 +9,11 @@
  * to work with.
  **/
 
-export type Xml2JsObject = {
+
+import xmljs = require("xml-js");
+
+
+type Xml2JsObject = {
     type: string;
     name: string;
     text?: string;
@@ -19,13 +23,20 @@ export type Xml2JsObject = {
 
 export class XmlElement {
 
+    readonly obj: Xml2JsObject;
     readonly type: string;
     readonly tag: string;
     readonly text: string = "";
     readonly attributes: Object = {};
     readonly content: Array<Xml2JsObject> = [];
 
+    static fromXML(xml:any): XmlElement {
+        //return new XmlElement(xmljs.xml2js(xml).elements[0]);
+        return new XmlElement(xmljs.xml2js(xml).elements[0]);
+    }
+
     constructor(xml2jsObject: Xml2JsObject) {
+        this.obj = xml2jsObject;
         this.type = xml2jsObject.type;
         this.tag = xml2jsObject.name;
         if (xml2jsObject.hasOwnProperty("attributes"))
@@ -36,6 +47,7 @@ export class XmlElement {
             this.text = this.content[0].text;
             this.content = [];
         }
+
     }
 
     findAll(tag: string) : XmlElement[] {

@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Xml2JsObject, XmlElement } from "src/utils/xml";
+import { XmlElement } from "src/utils/xml";
 
 import { Product } from "src/products/entities/product.entity";
 import { HealthService } from "./entities/health-service.entity";
-import { BenefitsList } from "./entities/benefits-list.entity";
 
 
 @Injectable()
@@ -16,8 +15,6 @@ export class ProductsService {
         private readonly productRepository: Repository<Product>,
         @InjectRepository(HealthService)
         private readonly healthServiceRepository: Repository<HealthService>,
-        @InjectRepository(BenefitsList)
-        private readonly benefitsRepository: Repository<BenefitsList>,
     ) { }
 
     async search(state: string, adults: number, children: boolean) {
@@ -47,25 +44,36 @@ export class ProductsService {
         })).key;
     }
 
-    async createFromXML(xml2jsObject: Xml2JsObject): Promise<Product> {
-        const productXml = new XmlElement(xml2jsObject);
-        const product = this.productRepository.create();
+    async createFromXML(xml: any, force_mode = false): Promise<Product> {
+
+        const productXml = XmlElement.fromXML(xml);
+        let product = await this.productRepository.findOneBy({code: productXml.attributes["ProductCode"]});
+        let oldXml = product ? product.xml : "";
+        const newXml = xml.toString();
+
+        if (!force_mode)
+            if (oldXml === newXml)
+                return product;
+
+        product = this.productRepository.create();
 
         product.code = productXml.attributes["ProductCode"];
         product.fundCode = productXml.find("FundCode").text;
         product.name = productXml.find("Name").text;
         product.type = productXml.find("ProductType").text;
-        product.productURL = productXml.find("ProductURL").text;
-        product.phisURL = productXml.find("PHISURL").text;
         product.status = productXml.find("ProductStatus").text;
         product.state = productXml.find("State").text;
         product.hospitalTier = productXml.find("HospitalTier").text;
         product.accommodationType = productXml.find("AccommodationType").text;
-        product.premium = +productXml.find("PremiumNoRebate").text;
+        product.premium = +productXml.find("PremiumNoRebate").text || 0;
+        product.hospitalComponent = +productXml.find("PremiumHospitalComponent").text || 0;
         product.excessPerPerson = +productXml.find("Excesses")?.find("ExcessPerPerson").text || 0;
         product.excessPerAdmission = +productXml.find("Excesses")?.find("ExcessPerAdmission").text || 0;
         product.excessPerPolicy = +productXml.find("Excesses")?.find("ExcessPerPolicy").text || 0;
         product.excess = Math.max ( product.excessPerPerson, product.excessPerAdmission, product.excessPerPolicy );
+
+        if (oldXml !== newXml)
+            product.xml = newXml;
 
         if (product.type !== "GeneralHealth") {
             const hospitalXml = productXml.find("HospitalCover");
@@ -96,6 +104,9 @@ export class ProductsService {
                     console.log("Invalid adult coverage:", dependant.attributes["Title"]);
             }
         }
+        if (product.excess === product.excessPerPolicy && product.adultsCovered === 2) {}
+            product.excess = product.excess / 2;
+
         product.services = "";
 
         for (const serviceXML of productXml.find("HospitalCover")?.find("MedicalServices")?.findAll("MedicalService")) {
@@ -108,28 +119,6 @@ export class ProductsService {
             }
         }
 
-        product.benefitLimits = [];
-
-        for (const serviceXML of productXml.find("GeneralHealthCover")?.find("GeneralHealthServices")?.findAll("GeneralHealthService")) {
-            if (serviceXML.attributes["Covered"] === "true") {
-                const title = serviceXML.attributes["Title"];
-                const key = await this.mapHealthService("G", title);
-                product.services = product.services + key + ";"
-
-                for (const stateXML of serviceXML.findAll("BenefitsList"))
-                    for (const benefitXML of stateXML.findAll("Benefit")) {
-                        const benefit = this.benefitsRepository.create();
-                        benefit.productCode = product.code;
-                        benefit.serviceKey = key;
-                        benefit.state = stateXML.attributes["State"];
-                        benefit.itemCode = benefitXML.attributes["Item"];
-                        benefit.benefitType = benefitXML.attributes["Type"];
-                        benefit.benefitAmount = +benefitXML.text;
-                        product.benefitLimits.push(benefit);
-                    }
-            }
-        }
-
-       return this.productRepository.save(product);
+        return await this.productRepository.save(product);
     }
 }

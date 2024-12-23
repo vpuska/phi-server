@@ -69,11 +69,10 @@ export class AppModule {
         await app.listen(process.env.PORT ?? 3000);
     }
 
-    static async run_phiload() {
+    static async run_phiload(mode = "") {
         const app = await NestFactory.createApplicationContext(AppModule);
         const loader = app.get(PhiLoadService);
-        await loader.run();
-        console.log("--- Complete!");
+        await loader.run(mode);
         process.exit(0);
     }
 

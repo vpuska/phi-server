@@ -21,15 +21,19 @@ import xtreamer = require("xtreamer");
 import xmljs = require("xml-js");
 import {FundsService} from "../funds/funds.service";
 import {ProductsService} from "../products/products.service";
-import {Xml2JsObject} from "../utils/xml";
 
 import { Injectable } from '@nestjs/common';
+import {Logger} from "@nestjs/common"
+
 
 const url = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
 
 
 @Injectable()
 export class PhiLoadService {
+
+    logger = new Logger("PHI Load");
+    force_mode = false;
 
     constructor(
         private readonly fundsService: FundsService,
@@ -39,17 +43,26 @@ export class PhiLoadService {
     async unzip(zip: JSZip, filename: string, tag: string, callback: Function) {
         const xt = xtreamer(tag);
         let count = 0;
+        let startTime = new Date().getTime();
         xt.on("data",(data) => {
+            //console.log(data.toString());
+            //callback(xmljs.xml2js(data).elements[0]);
+            callback(data);
             count++;
-            callback(xmljs.xml2js(data).elements[0]);
-            if (count % 250 === 0)
-                console.log(`${count} records processed`);
+            if (new Date().getTime() - startTime > 30000) {
+                this.logger.log(`Processing '${filename}', loaded ${count} <${tag}> elements so far.`);
+                startTime = new Date().getTime();
+            }
         });
         await pipeline(zip.file(filename).nodeStream(), xt);
-        console.log(`Read '${filename}' - processed ${count} <${tag}> elements`);
+        this.logger.log(`Processed '${filename}' - read ${count} <${tag}> elements`);
     }
 
-    async run() {
+    async run(mode = "") {
+
+        this.force_mode = mode === "force";
+        this.logger.log(`Started. Running in '${this.force_mode? "force" : "normal"}' mode`);
+
         // load services
         await this.productsService.createHealthService('ACU','G','Acupuncture');
         await this.productsService.createHealthService('ANT','G','AntenatalPostnatal');
@@ -120,7 +133,7 @@ export class PhiLoadService {
         // fetch the data package description file (JSON) from data.gov.au;
         let response = await fetch(url);
         if (!response.ok) {
-            console.log("Error fetching data package from data.gov.au:", response.statusText);
+            this.logger.error("Error fetching data package from data.gov.au:" + response.statusText);
             return;
         }
         const package_description = await response.json();
@@ -128,10 +141,10 @@ export class PhiLoadService {
         // The resource entry is an array of zip file names - one for each month.
         // Index 0 is the latest version and the one we fetch
         const resource = package_description['result']['resources'][0];
-        console.log("Latest data version = ", resource['description']);
+        this.logger.log("Latest data version = " + resource['description']);
         response = await fetch(resource['url']);
         if (!response.ok) {
-            console.log("Error fetching data resource from from data.gov.au:", response.statusText);
+            this.logger.error("Error fetching data resource from from data.gov.au:" + response.statusText);
             return;
         }
         const buffer = await response.arrayBuffer();
@@ -150,10 +163,11 @@ export class PhiLoadService {
             }
         });
 
-        await this.unzip(zip, files[0], "Fund", (xml:Xml2JsObject) => { this.fundsService.createFromXML(xml) });
-        await this.unzip(zip, files[1], "Product", (xml:Xml2JsObject) => { this.productsService.createFromXML(xml) });
-        await this.unzip(zip, files[2], "Product", (xml:Xml2JsObject) => { this.productsService.createFromXML(xml) });
-        await this.unzip(zip, files[3], "Product", (xml:Xml2JsObject) => { this.productsService.createFromXML(xml) });
+        await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });
+        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
+        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
+        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
+        this.logger.log("Complete");
     }
 
 }

@@ -72,6 +72,9 @@ export class CreateFundDto {
     @IsString()
     nonClassifiedDependantDescription: string = "";
 
+    @IsString()
+    xml: string = "";
+
     brands?: CreateBrandDto[];
 
     dependantLimits?: CreateDependantLimitDto[];
