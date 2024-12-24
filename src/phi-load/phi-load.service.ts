@@ -1,34 +1,34 @@
-/***
- File: phi-load.ts
- written-by:    Victor Puska
- date-written:  23 Nov 2024
-
- Purpose:
- Load private health insurance (PHI) fund and policy information into the database.
-
- Further information:
- Private Health Insurance Ombudsman:
- https://www.privatehealth.gov.au/
-
- PHI Datasets (data.gov.au)
- https://data.gov.au/dataset/ds-dga-8ab10b1f-6eac-423c-abc5-bbffc31b216c/details?q=private%20health%20insurance
-
- ***/
-
-import {pipeline} from 'node:stream/promises';
-import JSZip = require("jszip");
+/**
+ * phi-load/phi-load.service.ts
+ * ----------------
+ * Here we load the dataset provided by the Australian Private Health Insurance Ombudsman (PHIO).  Data is provided
+ * in a ```zip``` file streamed through {@link JSZip} and {@link xtreamer}.
+ *
+ * Further information:
+ *
+ * - Private Health Insurance Ombudsman:
+ *
+ *   https://www.privatehealth.gov.au/
+ *
+ * - PHI Datasets (data.gov.au)
+ *
+ *   https://data.gov.au/dataset/ds-dga-8ab10b1f-6eac-423c-abc5-bbffc31b216c/details?q=private%20health%20insurance
+ */
+import JSZip = require('jszip');
 import xtreamer = require("xtreamer");
-import xmljs = require("xml-js");
 import {FundsService} from "../funds/funds.service";
 import {ProductsService} from "../products/products.service";
 
-import { Injectable } from '@nestjs/common';
+import {pipeline} from 'node:stream/promises';
+import {Injectable} from '@nestjs/common';
 import {Logger} from "@nestjs/common"
 
+// Link to PHIO datasets hosted on data.gov.au
+const URL = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
 
-const url = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
-
-
+/**
+ * <b>PhiLoadService</b> class.  Handles the load of PHIO data.  See {@link PhiLoadService.run}
+ */
 @Injectable()
 export class PhiLoadService {
 
@@ -39,14 +39,23 @@ export class PhiLoadService {
         private readonly fundsService: FundsService,
         private readonly productsService: ProductsService,
     ){}
-
-    async unzip(zip: JSZip, filename: string, tag: string, callback: Function) {
+    /**
+     * Streams data from a ```zip``` file to {@link xtreamer} extracting the requested tag (```<Fund>```
+     * or ```<Product>```) from the file and passed to the load function
+     *
+     * Called by {@link PhiLoadService.run}.
+     *
+     * @param zip {@link JSZip} instance
+     * @param filename File name in the zip to process
+     * @param tag Tag to process
+     * @param callback Callback function to load the data
+     * @private
+     */
+    private async unzip(zip: JSZip, filename: string, tag: string, callback: Function) {
         const xt = xtreamer(tag);
         let count = 0;
         let startTime = new Date().getTime();
         xt.on("data",(data) => {
-            //console.log(data.toString());
-            //callback(xmljs.xml2js(data).elements[0]);
             callback(data);
             count++;
             if (new Date().getTime() - startTime > 30000) {
@@ -54,10 +63,15 @@ export class PhiLoadService {
                 startTime = new Date().getTime();
             }
         });
+        // stream zip file to xtreamer..
         await pipeline(zip.file(filename).nodeStream(), xt);
         this.logger.log(`Processed '${filename}' - read ${count} <${tag}> elements`);
     }
-
+    /**
+     * Run the load process.
+     * @param mode Blank or ```force```.    If ```force``` mode, update logic if run even though the
+     * XML for the record is unchanged.  Useful when logic has been changed and needs to be re-run.
+     */
     async run(mode = "") {
 
         this.force_mode = mode === "force";
@@ -131,7 +145,7 @@ export class PhiLoadService {
         await this.productsService.createHealthService('WEI','H','WeightLossSurgery');
 
         // fetch the data package description file (JSON) from data.gov.au;
-        let response = await fetch(url);
+        let response = await fetch(URL);
         if (!response.ok) {
             this.logger.error("Error fetching data package from data.gov.au:" + response.statusText);
             return;
@@ -163,6 +177,7 @@ export class PhiLoadService {
             }
         });
 
+        // Process each of the files we are interested in.
         await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });
         await this.unzip(zip, files[1], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
         await this.unzip(zip, files[2], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });

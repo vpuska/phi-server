@@ -1,3 +1,8 @@
+/**
+ * products/entities/health-service.entity.ts
+ * ---
+ * @author V.Puska
+ */
 import { Entity, Column, PrimaryColumn, Index } from 'typeorm';
 
 

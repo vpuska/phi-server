@@ -1,3 +1,9 @@
+/**
+ * products/products.module.ys
+ * ---
+ * @author V.Puska
+ */
+
 import { Module } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import {TypeOrmModule} from "@nestjs/typeorm";
@@ -11,5 +17,4 @@ import { HealthService } from './entities/health-service.entity';
   providers: [ProductsService],
   controllers: [ProductsController]
 })
-
 export class ProductsModule {}

@@ -1,4 +1,9 @@
-import {Logger, Module} from '@nestjs/common';
+/**
+ * phi-load/phi-load.module.ts
+ * ---
+ * @author V.Puska
+ */
+import {Module} from '@nestjs/common';
 import { PhiLoadService } from './phi-load.service';
 import {ProductsModule} from "../products/products.module";
 import {FundsModule} from "../funds/funds.module";
@@ -8,4 +13,9 @@ import {FundsModule} from "../funds/funds.module";
   imports: [ProductsModule, FundsModule],
   providers: [PhiLoadService],
 })
+/**
+ * **PhiLoadModul**
+ *
+ * Provides {@link PhiLoadService}
+ */
 export class PhiLoadModule {}

@@ -1,8 +1,14 @@
-import {Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany} from 'typeorm';
+/**
+ * products/entities/product.entity.ts
+ * ---
+ * @author V.Puska
+ */
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import {Fund} from "../../funds/entities/fund.entity";
 
 
 @Entity({name: 'products'})
+@Index(['state', 'adultsCovered', 'childCover'])
 export class Product {
     @PrimaryColumn({length:16})
     code: string;
