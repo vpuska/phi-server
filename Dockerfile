@@ -1,7 +1,6 @@
 ###################
 # BUILD FOR LOCAL DEVELOPMENT
 ###################
-
 FROM node:20-alpine AS development
 
 # Create app directory
@@ -24,7 +23,6 @@ USER node
 ###################
 # BUILD FOR PRODUCTION
 ###################
-
 FROM node:20-alpine AS build
 
 WORKDIR /usr/src/app
@@ -54,7 +52,6 @@ USER node
 ###################
 # PRODUCTION
 ###################
-
 FROM node:20-alpine AS production
 
 # Copy the bundled code from the build stage to the production image
