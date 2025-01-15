@@ -3,10 +3,11 @@
  * ----
  * @author V. Puska
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { XmlElement } from "src/utils/xml";
+import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
+
 
 import { Product } from "src/products/entities/product.entity";
 import { HealthService } from "./entities/health-service.entity";
@@ -15,6 +16,8 @@ import { HealthService } from "./entities/health-service.entity";
  */
 @Injectable()
 export class ProductsService {
+
+    logger = new Logger("ProductsService");
 
     constructor(
         @InjectRepository(Product)
@@ -112,11 +115,21 @@ export class ProductsService {
      * @param force_mode ```true``` to force update even though XML has not changed.
      */
     async createFromXML(xml: any, force_mode = false): Promise<Product> {
+        let newXml = xml.toString();
+        const unicodeErr = newXml.indexOf('\uFFFD');
+        if (unicodeErr >=0)
+            newXml = newXml.replaceAll('\uFFFD', '?');
 
-        const productXml = XmlElement.fromXML(xml);
-        let product = await this.productRepository.findOneBy({code: productXml.attributes["ProductCode"]});
+        const doc = new DOMParser().parseFromString(newXml, 'text/xml');
+        const prodNode = doc.getElementsByTagName("Product")[0];
+        const prodCode = prodNode.getAttribute("ProductCode");
+
+        if (unicodeErr >= 0)
+            this.logger.warn("Unicode character error in product " + prodCode);
+
+    //const productXml = XmlElement.fromXML(xml);
+        let product = await this.productRepository.findOneBy({code: prodCode});
         let oldXml = product ? product.xml : "";
-        const newXml = xml.toString();
 
         if (!force_mode)
             if (oldXml === newXml)
@@ -124,17 +137,17 @@ export class ProductsService {
 
         product = this.productRepository.create();
 
-        product.code = productXml.attributes["ProductCode"];
-        product.fundCode = productXml.find("FundCode").text;
-        product.name = productXml.find("Name").text;
-        product.type = productXml.find("ProductType").text;
-        product.status = productXml.find("ProductStatus").text;
-        product.state = productXml.find("State").text;
-        product.premium = +productXml.find("PremiumNoRebate").text || 0;
-        product.hospitalComponent = +productXml.find("PremiumHospitalComponent").text || 0;
-        product.excessPerPerson = +productXml.find("Excesses")?.find("ExcessPerPerson").text || 0;
-        product.excessPerAdmission = +productXml.find("Excesses")?.find("ExcessPerAdmission").text || 0;
-        product.excessPerPolicy = +productXml.find("Excesses")?.find("ExcessPerPolicy").text || 0;
+        product.code = prodCode;
+        product.fundCode = prodNode.getElementsByTagName("FundCode")[0].textContent;
+        product.name = prodNode.getElementsByTagName("Name")[0].textContent;
+        product.type = prodNode.getElementsByTagName("ProductType")[0].textContent;
+        product.status = prodNode.getElementsByTagName("ProductStatus")[0].textContent;
+        product.state = prodNode.getElementsByTagName("State")[0].textContent;
+        product.premium = +getContent(prodNode, "PremiumNoRebate", "0");
+        product.hospitalComponent = +getContent(prodNode, "PremiumHospitalComponent", "0");
+        product.excessPerPerson = +getContent(prodNode, "ExcessPerPerson", "0");
+        product.excessPerAdmission = +getContent(prodNode, "ExcessPerAdmission", "0");
+        product.excessPerPolicy = +getContent(prodNode, "ExcessPerPolicy", "0");
         product.excess = Math.max ( product.excessPerPerson, product.excessPerAdmission, product.excessPerPolicy );
 
         // don't update the XML if it is not changed as it has an impact on DB performance and size.
@@ -142,32 +155,33 @@ export class ProductsService {
             product.xml = newXml;
 
         if (product.type !== "GeneralHealth") {
-            const hospitalXml = productXml.find("HospitalCover");
-            product.hospitalTier = hospitalXml.find("HospitalTier").text;
-            product.accommodationType = hospitalXml.find("Accommodation").text;
+            product.hospitalTier = prodNode.getElementsByTagName("HospitalTier")[0].textContent;
+            product.accommodationType = prodNode.getElementsByTagName("Accommodation")[0].textContent;
         }
 
-        const whoIsCoveredXml = productXml.find("WhoIsCovered");
-        if (whoIsCoveredXml.attributes["OnlyOnePerson"] === "true") {
+        const whoIsCoveredNode = prodNode.getElementsByTagName("WhoIsCovered")[0];
+        if (whoIsCoveredNode.getAttribute("OnlyOnePerson") === "true") {
             product.adultsCovered = 1
         } else {
-            const coverageXml = whoIsCoveredXml.find("Coverage");
-            product.adultsCovered = +coverageXml.attributes["NumberOfAdults"]
-            for (const dependant of coverageXml.findAll("DependantCover")) {
-                if (dependant.attributes["Title"] === "Child")
-                    product.childCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "ConditionalNonStudent")
-                    product.conditionalNonStudentCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "Disability")
-                    product.disabilityCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "NonClassified")
-                    product.nonClassifiedCovered = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "NonStudent")
-                    product.nonStudentCover = dependant.attributes["Covered"] === "true";
-                else if (dependant.attributes["Title"] === "Student")
-                    product.studentCover = dependant.attributes["Covered"] === "true";
+            const coverageNode = whoIsCoveredNode.getElementsByTagName("Coverage")[0];
+            product.adultsCovered = +coverageNode.getAttribute("NumberOfAdults");
+            for (const dependant of coverageNode.getElementsByTagName("DependantCover")) {
+                const title = dependant.getAttribute("Title");
+                const covered = (dependant.getAttribute("Covered") === "true");
+                if (title === "Child")
+                    product.childCover = covered;
+                else if (title === "ConditionalNonStudent")
+                    product.conditionalNonStudentCover = covered;
+                else if (title === "Disability")
+                    product.disabilityCover = covered;
+                else if (title === "NonClassified")
+                    product.nonClassifiedCovered = covered;
+                else if (title === "NonStudent")
+                    product.nonStudentCover = covered;
+                else if (title === "Student")
+                    product.studentCover = covered;
                 else
-                    console.log("Invalid adult coverage:", dependant.attributes["Title"]);
+                    console.log("Invalid adult coverage:", title);
             }
         }
         if (product.excess === product.excessPerPolicy && product.adultsCovered === 2)
@@ -175,9 +189,9 @@ export class ProductsService {
 
         product.services = "";
 
-        for (const serviceXML of productXml.find("HospitalCover")?.find("MedicalServices")?.findAll("MedicalService")) {
-            const covered = serviceXML.attributes["Cover"];
-            const title = serviceXML.attributes["Title"];
+        for (const serviceNode of prodNode.getElementsByTagName("MedicalService")) {
+            const covered = serviceNode.getAttribute("Cover");
+            const title = serviceNode.getAttribute("Title");
             const modifier = (covered==="Restricted") ? "-" : "";
             if (covered !== "NotCovered") {
                 const key = await this.mapHealthService("H", title);
@@ -185,9 +199,9 @@ export class ProductsService {
             }
         }
 
-        for (const serviceXML of productXml.find("GeneralHealthCover")?.find("GeneralHealthServices")?.findAll("GeneralHealthService")) {
-            const covered = serviceXML.attributes["Covered"];
-            const title = serviceXML.attributes["Title"];
+        for (const serviceNode of prodNode.getElementsByTagName("GeneralHealthService")) {
+            const covered = serviceNode.getAttribute("Cover");
+            const title = serviceNode.getAttribute("Title");
             if (covered === "true") {
                 const key = await this.mapHealthService("G", title);
                 product.services = product.services + key + ";"
@@ -196,4 +210,15 @@ export class ProductsService {
 
         return await this.productRepository.save(product);
     }
+
 }
+
+function getContent(node: XMLElement, tag: string, defaultValue: string = "") : string | null {
+    const nodes = node.getElementsByTagName(tag);
+    if (!nodes)
+        return defaultValue;
+    if (nodes.length === 0)
+        return defaultValue;
+    return nodes[0].textContent;
+}
+

@@ -6,8 +6,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { XmlElement } from "../utils/xml";
-
+import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import { Fund } from "./entities/fund.entity";
 
 /**
@@ -23,9 +22,24 @@ export class FundsService {
 
     /**
      * Return all fund records.
+     * @param elements - Optional array of element names
      */
-    async findAll() : Promise<Fund[]> {
-        return await this.fundRepository.find();
+    async findAll(elements : string[] = []) : Promise<Object[]> {
+        const result = await this.fundRepository.find();
+        const result2 = [];
+        const parser = new DOMParser();
+        const serializer = new XMLSerializer();
+        for (const fund of result) {
+            const { xml, ...obj } = fund;
+            for (const key of elements) {
+                const doc = parser.parseFromString(xml, 'text/xml')
+                const elems = doc.getElementsByTagName(key);
+                if (elems.length > 0)
+                    obj[key] = serializer.serializeToString(elems[0]);
+            }
+            result2.push(obj);
+        }
+        return result2;
     }
 
     /**
@@ -38,15 +52,14 @@ export class FundsService {
 
     /**
      * Create a fund record from PHIO XML data
-     * @param xml - PHIO XML
+     * @param xml - PHIO XML (string)
      */
     async createFromXML(xml:any): Promise<Fund> {
-        const fundXml = XmlElement.fromXML(xml);
+        const doc = new DOMParser().parseFromString(xml.toString(), 'text/xml');
         const fund =  this.fundRepository.create();
-
-        fund.code = fundXml.find("FundCode").text;
-        fund.name = fundXml.find("FundName").text;
-        fund.type = fundXml.find("FundType").text;
+        fund.code = doc.getElementsByTagName("FundCode")[0].textContent;
+        fund.name = doc.getElementsByTagName("FundName")[0].textContent;
+        fund.type = doc.getElementsByTagName("FundType")[0].textContent;
         fund.xml = xml.toString()
 
         return await this.fundRepository.save(fund);

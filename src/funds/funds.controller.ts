@@ -3,7 +3,7 @@
  * ---
  * @author V. Puska
  */
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { FundsService } from './funds.service';
 
 @Controller('funds')
@@ -13,8 +13,11 @@ export class FundsController {
      * Return all fund records
      */
     @Get()
-    fundAll() {
-        return this.fundsService.findAll();
+    fundAll(@Query('elements') elements: string) {
+        if (elements)
+            return this.fundsService.findAll(elements.split(','))
+        else
+            return this.fundsService.findAll();
     }
     /**
      * Return one fund record
