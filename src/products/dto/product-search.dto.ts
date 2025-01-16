@@ -1,4 +1,4 @@
-import { IsBIC, IsBoolean, IsIn, IsInt, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsString } from 'class-validator';
 
 /**
  * product-search.dto.ts
