@@ -84,6 +84,9 @@ export class Product {
     @Column({length:512})
     services: string;
 
+    @Column({type:'boolean', default:true})
+    isPresent: boolean;
+
     @Column({type:'text', nullable:true})
     xml: string;
 

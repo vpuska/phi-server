@@ -77,6 +77,9 @@ export class PhiLoadService {
         this.force_mode = mode === "force";
         this.logger.log(`Started. Running in '${this.force_mode? "force" : "normal"}' mode`);
 
+        this.logger.log("Clearing 'isPreset' flag on product records");
+        await this.productsService.clearIsPresentFlag();
+
         // load hospital tiers
         await this.productsService.createHospitalTier("Basic", 100);
         await this.productsService.createHospitalTier("BasicPlus", 150);
@@ -191,6 +194,9 @@ export class PhiLoadService {
         await this.unzip(zip, files[1], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
         await this.unzip(zip, files[2], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
         await this.unzip(zip, files[3], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
+
+        this.logger.log("Flagging orphaned product records.");
+        await this.productsService.decommissionOrphans();
         this.logger.log("Complete");
     }
 

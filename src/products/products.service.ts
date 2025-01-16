@@ -162,6 +162,24 @@ export class ProductsService {
     }
 
     /**
+     * Sets the `isPresent` flag to `false` on all product records.  Used by {@link PhiLoadService.run}.
+     */
+    async clearIsPresentFlag() {
+        await this.productRepository.update({ isPresent: true }, {
+            isPresent: false
+        })
+    }
+
+    /**
+     * Decommission records that have been orphaned.  Used by {@link PhiLoadService.run}.
+     */
+    async decommissionOrphans() {
+        await this.productRepository.update({ isPresent: false }, {
+            status: 'Orphaned'
+        })
+    }
+
+    /**
      * Create a {@Link Product} from XML data and save to the database.
      * @param xml Product XML
      * @param force_mode ```true``` to force update even though XML has not changed.
@@ -169,7 +187,7 @@ export class ProductsService {
     async createFromXML(xml: any, force_mode = false): Promise<Product> {
         let newXml = xml.toString();
         const unicodeErr = newXml.indexOf('\uFFFD');
-        if (unicodeErr >=0)
+        if (unicodeErr >= 0)
             newXml = newXml.replaceAll('\uFFFD', '?');
 
         const doc = new DOMParser().parseFromString(newXml, 'text/xml');
@@ -179,13 +197,17 @@ export class ProductsService {
         if (unicodeErr >= 0)
             this.logger.warn("Unicode character error in product " + prodCode);
 
-    //const productXml = XmlElement.fromXML(xml);
-        let product = await this.productRepository.findOneBy({code: prodCode});
+        //const productXml = XmlElement.fromXML(xml);
+        let product = await this.productRepository.findOneBy({ code: prodCode });
         let oldXml = product ? product.xml : "";
 
-        if (!force_mode)
-            if (oldXml === newXml)
+        if (!force_mode) {
+            if (oldXml === newXml) {
+                product.isPresent = true;
+                await this.productRepository.save(product);
                 return product;
+            }
+        }
 
         product = this.productRepository.create();
 
@@ -262,11 +284,17 @@ export class ProductsService {
             }
         }
 
+        product.isPresent = true;
         return await this.productRepository.save(product);
     }
-
 }
 
+/**
+ * Returns the content of an XML note.
+ * @param node The node to search
+ * @param tag The tag to search for
+ * @param defaultValue The default value to return if not found or empty
+ */
 function getContent(node: XMLElement, tag: string, defaultValue: string = "") : string | null {
     const nodes = node.getElementsByTagName(tag);
     if (!nodes)
