@@ -3,15 +3,20 @@
  * ---
  * Author: V.Puska
  */
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ProductsService } from './products.service';
+import { ProductSearchDto } from './dto/product-search.dto';
 
 /**
  * **ProductController** provides access to product queries and actions.
  */
 @Controller('products')
 export class ProductsController {
+
+    static DEPENDANT_TYPES = ["child", "student", "nonStudent", "nonClassified", "conditionalNonStudent", "disability" ];
+
     constructor(private readonly productService: ProductsService) {}
+
     /**
      * Find a single product using the product code.  Code is split into 2 fields because the
      * product code includes a ```/``` character.  Eg ```I119/WNDI2D```
@@ -26,6 +31,7 @@ export class ProductsController {
         const product = await this.productService.findByOne(`${code1}/${code2}`);
         return { code: product.code, xml: product.xml };
     }
+
     /**
      * Return a list of hospital and general services
      */
@@ -33,36 +39,30 @@ export class ProductsController {
     serviceList() {
         return this.productService.serviceList();
     }
-    /**
-     * Returns all single parent policies for a given state.  (1 adult and children covered)
-     * @param state - State code
-     */
-    @Get('search/singleparent/:state')
-    singleparent(@Param('state') state: string) {
-        return this.productService.search(state, 1, true);
-    }
-    /**
-     * Returns all family policies for a given state.  (2 adults and children covered)
-     * @param state - State code
-     */
-    @Get('search/family/:state')
-    family(@Param('state') state: string) {
-        return this.productService.search(state, 2, true);
-    }
-    /**
-     * Returns all singles policies for a given state.  (1 adult and children not covered)
-     * @param state
-     */
-    @Get('search/single/:state')
-    single(@Param('state') state: string) {
-        return this.productService.search(state, 1, false);
-    }
-    /**
-     * Returns all couples policies for a given state.  (2 adults and children not covered)
-     * @param state - State code
-     */
-    @Get('search/couple/:state')
-    couple(@Param('state') state: string) {
-        return this.productService.search(state, 2, false);
+
+    @Post('search')
+    search(@Body() data: ProductSearchDto) {
+
+        const dependantFilter = {};
+        for (const dependant of ProductsController.DEPENDANT_TYPES) {
+            const property = `${dependant}Cover`;
+            if (data[property])
+                dependantFilter[property] = true;
+        }
+        if (Object.keys(dependantFilter).length === 0) {
+            for (const dependant of ProductsController.DEPENDANT_TYPES) {
+                const property = `${dependant}Cover`;
+                dependantFilter[property] = false;
+            }
+        }
+
+        return this.productService.search(
+            data.hospitalCover,
+            data.generalCover,
+            data.hospitalTier,
+            data.state === "ACT" ? "NSW" : data.state,
+            data.numberOfAdults,
+            dependantFilter
+        )
     }
 }

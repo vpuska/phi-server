@@ -5,12 +5,13 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
 
 
 import { Product } from "src/products/entities/product.entity";
 import { HealthService } from "./entities/health-service.entity";
+import { HospitalTier } from './entities/hospital-tier.entity';
 /**
  * **ProductService**
  */
@@ -24,25 +25,71 @@ export class ProductsService {
         private readonly productRepository: Repository<Product>,
         @InjectRepository(HealthService)
         private readonly healthServiceRepository: Repository<HealthService>,
+        @InjectRepository(HospitalTier)
+        private readonly hospitalTierRepository: Repository<HospitalTier>,
     ) { }
+
     /**
      * Search products table extracting matching policies.
-     * @param state ```NSW```, ```VIC```, ```QLD```, ```TAS```, ```SA```, ```WA``` or ```NT```
-     * @param adults ```1``` or ```2```
-     * @param children  ```true``` if policies should include children
+     * @param hospitalCover `true` to select hospital cover
+     * @param generalCover `true` to select general cover
+     * @param hospitalTier
+     * @param state `NSW`, `VIC`, `QLD`, `TAS`, `SA`, `WA` or `NT`
+     * @param adults `0`, `1` or `2`
+     * @param dependantFilter  Object of dependent cover flags
      */
-    async search(state: string, adults: number, children: boolean) {
+    async search(
+        hospitalCover: boolean,
+        generalCover: boolean,
+        hospitalTier: string,
+        state: string,
+        adults: number,
+        dependantFilter: Object
+    ) {
+        const types = [];
+        if (hospitalCover)
+            types.push("Hospital");
+        if (hospitalCover && generalCover)
+            types.push("Combined")
+
+        const filterTier = await this.hospitalTierRepository.findOneBy({tier: hospitalTier});
+        const minimumRank = filterTier?.ranking || 0;
+
+        const filter = [];
+
+        if (hospitalCover)
+            filter.push({
+                state: In([state, 'ALL']),
+                type: In(types),
+                adultsCovered: adults,
+                status: 'Open',
+                ...dependantFilter,
+                hospitalTierRanking: {
+                    ranking: MoreThanOrEqual(minimumRank),
+                }
+            });
+
+        if (generalCover)
+            filter.push({
+                state: In([state, 'ALL']),
+                type: "GeneralHealth",
+                adultsCovered: adults,
+                status: 'Open',
+                ...dependantFilter,
+            });
+
         return await this.productRepository.find({
             select: [
                 'code',
                 'name',
                 'fundCode',
-                'type' ,
+                'type',
+                'state',
                 'adultsCovered',
                 'childCover',
                 'studentCover',
                 'nonStudentCover',
-                'nonClassifiedCovered',
+                'nonClassifiedCover',
                 'conditionalNonStudentCover',
                 'disabilityCover',
                 'excess',
@@ -55,19 +102,10 @@ export class ProductsService {
                 'accommodationType',
                 'services'
             ],
-            where: [{
-                state: state,
-                adultsCovered: adults,
-                childCover: children,
-                status: 'Open',
-            },{
-                state: "ALL",
-                adultsCovered: adults,
-                childCover: children,
-                status: 'Open',
-            }]
+            where: filter
         });
     }
+
     /**
      * Find single product.
      * @param productCode Product code.
@@ -88,6 +126,7 @@ export class ProductsService {
         service.serviceCode = code;
         await this.healthServiceRepository.save(service);
     }
+
     /**
      * Convert PHIO service code to the server's abbreviated mnemonic.
      * @param type ```H``` | ```G```
@@ -102,6 +141,19 @@ export class ProductsService {
             }
         })).key;
     }
+
+    /**
+     * Add a hospital tier ranking.  Used by {@link PhiLoadService.run}.
+     * @param tier The PHIO HospitalTier. Eg "SilverPlus"
+     * @param ranking Assigned tier ranking.
+     */
+    async createHospitalTier(tier: string, ranking: number) {
+        const hospitalTier = this.hospitalTierRepository.create();
+        hospitalTier.tier = tier;
+        hospitalTier.ranking = ranking;
+        await this.hospitalTierRepository.save(hospitalTier);
+    }
+
     /**
      * Return full service mapping table.
      */
@@ -154,6 +206,8 @@ export class ProductsService {
         if (oldXml !== newXml)
             product.xml = newXml;
 
+        product.hospitalTier = "None";
+
         if (product.type !== "GeneralHealth") {
             product.hospitalTier = prodNode.getElementsByTagName("HospitalTier")[0].textContent;
             product.accommodationType = prodNode.getElementsByTagName("Accommodation")[0].textContent;
@@ -175,7 +229,7 @@ export class ProductsService {
                 else if (title === "Disability")
                     product.disabilityCover = covered;
                 else if (title === "NonClassified")
-                    product.nonClassifiedCovered = covered;
+                    product.nonClassifiedCover = covered;
                 else if (title === "NonStudent")
                     product.nonStudentCover = covered;
                 else if (title === "Student")
@@ -200,7 +254,7 @@ export class ProductsService {
         }
 
         for (const serviceNode of prodNode.getElementsByTagName("GeneralHealthService")) {
-            const covered = serviceNode.getAttribute("Cover");
+            const covered = serviceNode.getAttribute("Covered");
             const title = serviceNode.getAttribute("Title");
             if (covered === "true") {
                 const key = await this.mapHealthService("G", title);

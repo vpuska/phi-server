@@ -77,6 +77,15 @@ export class PhiLoadService {
         this.force_mode = mode === "force";
         this.logger.log(`Started. Running in '${this.force_mode? "force" : "normal"}' mode`);
 
+        // load hospital tiers
+        await this.productsService.createHospitalTier("Basic", 100);
+        await this.productsService.createHospitalTier("BasicPlus", 150);
+        await this.productsService.createHospitalTier("Bronze", 200);
+        await this.productsService.createHospitalTier("BronzePlus", 250);
+        await this.productsService.createHospitalTier("Silver", 300);
+        await this.productsService.createHospitalTier("SilverPlus", 350);
+        await this.productsService.createHospitalTier("Gold", 400);
+        await this.productsService.createHospitalTier("None", 0);
         // load services
         await this.productsService.createHealthService('ACU','G','Acupuncture');
         await this.productsService.createHealthService('ANT','G','AntenatalPostnatal');

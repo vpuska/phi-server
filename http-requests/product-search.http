@@ -1,0 +1,17 @@
+###
+POST http://localhost:3000/products/search
+Content-Type: application/json
+
+{
+  "numberOfAdults": 2,
+  "hospitalCover": false,
+  "generalCover": true,
+  "childCover": true,
+  "studentCover": false,
+  "nonStudentCover": false,
+  "conditionalNonStudentCover": false,
+  "nonClassifiedCover": false,
+  "disabilityCover": false,
+  "hospitalTier": "BronzePlus",
+  "state": "WA"
+}

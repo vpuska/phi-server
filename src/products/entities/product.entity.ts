@@ -3,8 +3,9 @@
  * ---
  * @author V.Puska
  */
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import {Fund} from "../../funds/entities/fund.entity";
+import { HospitalTier } from './hospital-tier.entity';
 
 
 @Entity({name: 'products'})
@@ -45,7 +46,7 @@ export class Product {
     studentCover: boolean;
 
     @Column({type:'boolean', default: false})
-    nonClassifiedCovered: boolean;
+    nonClassifiedCover: boolean;
 
     @Column({type:'boolean', default: false})
     nonStudentCover: boolean;
@@ -85,4 +86,8 @@ export class Product {
 
     @Column({type:'text', nullable:true})
     xml: string;
+
+    @ManyToOne(() => HospitalTier, (tier) => tier.tier, {})
+    @JoinColumn({name:'hospitalTier'})
+    hospitalTierRanking: HospitalTier;
 }
