@@ -86,14 +86,11 @@ export class AppModule {
     }
     /**
      * Run the phi-load command.
-     * @param mode omit, blank or "force"  If "force", the phi-load process will update
-     * product records even though the input XML is unchanged.  Useful where update logic has been
-     * changed.
      */
-    static async run_phiload(mode = "") {
+    static async run_phiload() {
         const app = await NestFactory.createApplicationContext(AppModule);
         const loader = app.get(PhiLoadService);
-        await loader.run(mode);
+        await loader.run();
         process.exit(0);
     }
 

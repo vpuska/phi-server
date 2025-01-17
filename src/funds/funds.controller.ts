@@ -10,7 +10,12 @@ import { FundsService } from './funds.service';
 export class FundsController {
     constructor(private readonly fundsService: FundsService) {}
     /**
-     * Return all fund records
+     * Returns all fund records.
+     * @example Return `FundDependants` and `RelatedBrandNames`
+     * /funds/?elements=FundDependants,RelatedBrandNames
+     * @example Return the complete `Fund` element
+     * /funds/?elements=Fund
+     * @param elements Optional. Comma-delimited array of XML elements to include in the result.
      */
     @Get()
     fundAll(@Query('elements') elements: string) {
@@ -20,7 +25,8 @@ export class FundsController {
             return this.fundsService.findAll();
     }
     /**
-     * Return one fund record
+     * Returns all fields, incuding the complete XML document, for one fund
+     * @example /funds/BUP
      * @param code - fund code
      */
     @Get(':code')

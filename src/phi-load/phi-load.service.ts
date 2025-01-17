@@ -69,13 +69,10 @@ export class PhiLoadService {
     }
     /**
      * Run the load process.
-     * @param mode Blank or ```force```.    If ```force``` mode, update logic if run even though the
-     * XML for the record is unchanged.  Useful when logic has been changed and needs to be re-run.
      */
-    async run(mode = "") {
+    async run() {
 
-        this.force_mode = mode === "force";
-        this.logger.log(`Started. Running in '${this.force_mode? "force" : "normal"}' mode`);
+        this.logger.log(`Started.`);
 
         this.logger.log("Clearing 'isPreset' flag on product records");
         await this.productsService.clearIsPresentFlag();
@@ -191,9 +188,9 @@ export class PhiLoadService {
 
         // Process each of the files we are interested in.
         await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });
-        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
-        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
-        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productsService.createFromXML(xml, this.force_mode) });
+        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productsService.createFromXML(xml) });
+        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productsService.createFromXML(xml) });
+        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productsService.createFromXML(xml) });
 
         this.logger.log("Flagging orphaned product records.");
         await this.productsService.decommissionOrphans();

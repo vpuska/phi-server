@@ -116,7 +116,7 @@ export class ProductsService {
     /**
      * Add a health service.  Used by {@link PhiLoadService.run}
      * @param key 3 character abbreviated mnemonic for the service
-     * @param type ```H``` | ```G```
+     * @param type `H` | `G`
      * @param code PHIO service code
      */
     async createHealthService(key: string, type: "H" | "G", code: string) {
@@ -129,7 +129,7 @@ export class ProductsService {
 
     /**
      * Convert PHIO service code to the server's abbreviated mnemonic.
-     * @param type ```H``` | ```G```
+     * @param type `H` | `G`
      * @param serviceCode PHIO service code
      * @return  The abbreviated mnemonic
      */
@@ -182,9 +182,8 @@ export class ProductsService {
     /**
      * Create a {@Link Product} from XML data and save to the database.
      * @param xml Product XML
-     * @param force_mode ```true``` to force update even though XML has not changed.
      */
-    async createFromXML(xml: any, force_mode = false): Promise<Product> {
+    async createFromXML(xml: any): Promise<Product> {
         let newXml = xml.toString();
         const unicodeErr = newXml.indexOf('\uFFFD');
         if (unicodeErr >= 0)
@@ -197,19 +196,7 @@ export class ProductsService {
         if (unicodeErr >= 0)
             this.logger.warn("Unicode character error in product " + prodCode);
 
-        //const productXml = XmlElement.fromXML(xml);
-        let product = await this.productRepository.findOneBy({ code: prodCode });
-        let oldXml = product ? product.xml : "";
-
-        if (!force_mode) {
-            if (oldXml === newXml) {
-                product.isPresent = true;
-                await this.productRepository.save(product);
-                return product;
-            }
-        }
-
-        product = this.productRepository.create();
+        const product = this.productRepository.create();
 
         product.code = prodCode;
         product.fundCode = prodNode.getElementsByTagName("FundCode")[0].textContent;
@@ -223,12 +210,11 @@ export class ProductsService {
         product.excessPerAdmission = +getContent(prodNode, "ExcessPerAdmission", "0");
         product.excessPerPolicy = +getContent(prodNode, "ExcessPerPolicy", "0");
         product.excess = Math.max ( product.excessPerPerson, product.excessPerAdmission, product.excessPerPolicy );
-
-        // don't update the XML if it is not changed as it has an impact on DB performance and size.
-        if (oldXml !== newXml)
-            product.xml = newXml;
-
         product.hospitalTier = "None";
+        product.services = "";
+
+        if (product.excess === product.excessPerPolicy && product.adultsCovered === 2)
+            product.excess = product.excess / 2;
 
         if (product.type !== "GeneralHealth") {
             product.hospitalTier = prodNode.getElementsByTagName("HospitalTier")[0].textContent;
@@ -260,10 +246,6 @@ export class ProductsService {
                     console.log("Invalid adult coverage:", title);
             }
         }
-        if (product.excess === product.excessPerPolicy && product.adultsCovered === 2)
-            product.excess = product.excess / 2;
-
-        product.services = "";
 
         for (const serviceNode of prodNode.getElementsByTagName("MedicalService")) {
             const covered = serviceNode.getAttribute("Cover");
@@ -284,6 +266,7 @@ export class ProductsService {
             }
         }
 
+        product.xml = newXml;
         product.isPresent = true;
         return await this.productRepository.save(product);
     }
