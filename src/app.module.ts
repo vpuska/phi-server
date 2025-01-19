@@ -17,6 +17,8 @@ import { PhiLoadModule } from './phi-load/phi-load.module';
 import * as process from "node:process";
 import { NestFactory } from '@nestjs/core';
 import { PhiLoadService } from './phi-load/phi-load.service';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
 
 const logger = new Logger('AppModule');
 
@@ -73,9 +75,33 @@ export class AppModule {
      */
     static async run_app_server() {
         const app = await NestFactory.create(AppModule);
+
+        const config = new DocumentBuilder()
+            .setTitle('Private Health Insurance (PHI) Product Search API')
+            .setDescription(
+                "This is a demonstration/sample API server built with <a target='_blank' href='https://nestjs.com/'>NestJS</a>.<br><br>" +
+                "The API serves information about **Australian private health insurance** funds and products. <em>Its only purpose is " +
+                "as a platform to provide a non-trivial dataset for personal research, investigation and " +
+                "education into web application development technologies</em>.<br><br>" +
+                "To allow for easier comparison of health insurance products, all Australian health insurers " +
+                "are required by law to create a Private Health Information Statement for each of their products. " +
+                "These statements are collated by the **Australian Private Health Insurance Ombudsman** (PHIO) and published on  " +
+                "<a target='_blank' href='https://data.gov.au/dataset/ds-dga-8ab10b1f-6eac-423c-abc5-bbffc31b216c/details?q=PHIO'>data.gov.au</a>. " +
+                "Further information about PHIO can be found at " +
+                "<a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a><br><br>" +
+                "This site and application has no connection to the Australian Private Health Insurance Ombudsman, and is purely a personal, " +
+                "non-commercial, non-official project.  Data provided by this API is not to be relied upon for any comparison of, or research into, " +
+                "private health insurance products.  Please use <a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a> " +
+                "or one of the commercial product comparison services."
+            )
+            .setVersion('1.0')
+            .build();
+        const documentFactory = () => SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('swagger', app, documentFactory);
+
         app.enableCors({
             origin: true,
-            methods: ['GET']
+            methods: ['GET', 'POST']
         });
         app.useGlobalPipes(new ValidationPipe({
             transform: true,

@@ -7,7 +7,7 @@ export class AppService {
     constructor(@InjectDataSource() private datasource: DataSource) {
     }
 
-    getHello(): string {
+    root(): string {
         return 'Hello from phi-demo-server!';
     }
 }
