@@ -1,7 +1,8 @@
 /**
  * products/products.service.ts
  * ----
- * @author V. Puska
+ * @author: V. Puska
+ * @date: 03-Jan-2025
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -33,7 +34,7 @@ export class ProductsService {
      * Search products table extracting matching policies.
      * @param hospitalCover `true` to select hospital cover
      * @param generalCover `true` to select general cover
-     * @param hospitalTier
+     * @param hospitalTier `Basic`, `BasicPlus`, etc..
      * @param state `NSW`, `VIC`, `QLD`, `TAS`, `SA`, `WA` or `NT`
      * @param adults `0`, `1` or `2`
      * @param dependantFilter  Object of dependent cover flags
@@ -113,6 +114,7 @@ export class ProductsService {
     async findByOne(productCode: string) {
         return await this.productRepository.findOneBy({code: productCode});
     }
+
     /**
      * Add a health service.  Used by {@link PhiLoadService.run}
      * @param key 3 character abbreviated mnemonic for the service
@@ -180,7 +182,7 @@ export class ProductsService {
     }
 
     /**
-     * Create a {@Link Product} from XML data and save to the database.
+     * Create a {@Link Product} from XML data and save to the database.  Used by {@link PhiLoadService.run}.
      * @param xml Product XML
      */
     async createFromXML(xml: any): Promise<Product> {
@@ -194,7 +196,7 @@ export class ProductsService {
         const prodCode = prodNode.getAttribute("ProductCode");
 
         if (unicodeErr >= 0)
-            this.logger.warn("Unicode character error in product " + prodCode);
+            this.logger.warn("Unicode character detected in product " + prodCode);
 
         const product = this.productRepository.create();
 

@@ -1,29 +1,29 @@
 /**
  * app.module.ts
  * ------------
- * The main module file for the ```nest.js``` application.
+ * The main module file for the application.
  * @author V.Puska
  * @date 01-Nov-24
  *
  */
 import { DynamicModule, Logger, Module, ValidationPipe } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from "@nestjs/config";
+import * as process from "node:process";
+import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FundsModule } from './funds/funds.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from "@nestjs/config";
+import { PhiLoadService } from './phi-load/phi-load.service';
 import { ProductsModule } from './products/products.module';
 import { PhiLoadModule } from './phi-load/phi-load.module';
-import * as process from "node:process";
-import { NestFactory } from '@nestjs/core';
-import { PhiLoadService } from './phi-load/phi-load.service';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
 
 const logger = new Logger('AppModule');
 
 /**
- * Factory function to create the ```TypeOrmModule``` for the application.  Used by {@Link AppModule}.
+ * Factory function to create the `TypeOrmModule` for the application.
  */
 function typeOrmSettings(): DynamicModule {
 

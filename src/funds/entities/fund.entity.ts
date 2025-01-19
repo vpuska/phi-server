@@ -1,6 +1,8 @@
 /**
  * funds/entities/fund.entity.ts
  * ---
+ * @author V Puska
+ * @date 01-Dec-2024
  */
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 

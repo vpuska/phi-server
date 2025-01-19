@@ -1,38 +1,24 @@
-# PHI-SERVER
-> Note: PHI = (Australian) Private Health Insurance
-
-This is a hobby project to experiment with building applications in typescript/javascript.  It will ultimately form the server/back-end component of 
-a larger client and server application.  A client (possibly SPA/PWA) project will follow.
+# PHI-DEMO-SERVER
 
 ## The Application
+This is a demonstration/sample API server built with [NestJs](https://www.nestjs.com).
 
-The application serves information about Australian private health insurance (PHI) products with the intention of being able to compare 
-products to select the one most appropriate to you.  Several companies provide this service - E.g. iSelect, Compare the Market - but you can
-use the non-commercial Commonwealth Ombudsman's site at [www.privatehealth.gov.au](https://www.privatehealth.gov.au/) to investigate the private health insurance data
-domain.  Ultimately, this application will be able to perform similar comparisons to the government site:
+The API serves information about **Australian private health insurance** funds and products. 
+Its sole purpose is as a platform to **_provide a non-trivial dataset for personal research, 
+investigation and education into web application development technologies_**.
 
-### Why Private Health Insurance?
+## Australian Private Health Insurance
+To allow for easier comparison of health insurance products, all Australian health insurers are required by law to create
+a **Private Health Information Statement** for each of their products. These statements are collated by the Australian Private Health 
+Insurance Ombudsman (PHIO) and published on [data.gov.au](https://data.gov.au). Further information about PHIO can be found 
+at [https://www.privatehealth.gov.au/](https://www.privatehealth.gov.au).
 
-1) I have some domain knowledge.
-2) The information is publicly available.
-3) The data is complex enough to be challenging, but not so complex that it is unwieldy.
-4) We have a site - www.privatehealth.gov.au - to compare with.
-5) It should make for a interesting front-end project.
+This information provides a convenient dataset to investigate, test and tinker with web application development technologies.
 
-### Release 1.0.0 Capability
-
-For this release, the application can:
-
-* Download PHI data from the government website and load into the application's database. 
-* Provide a list of Australian health funds - ```funds```
-* Search for policies:
-  * ```products/search/single/:state```
-  * ```products/search/couple/:state```
-  * ```products/search/family/:state```
-  * ```products/search/singleparent/:state```
-* Retrieve detailed information for an individual policy - ```products/:product```
-
-See code comments for further details.
+> This site and application has no connection to the Australian Private Health Insurance Ombudsman, and is purely a personal, 
+> non-commercial, non-official project. Data provided by this API is not to be relied upon for any comparison of, 
+> or research into, private health insurance products. Please use https://www.privatehealth.gov.au or one of the 
+> commercial product comparison services.
 
 ## Project Setup
 
@@ -43,9 +29,19 @@ The project is organised in accordance with NestJS guidelines.  Simply download 
  
 ## Loading PHI Data
 
-To load PHI Data, run the ```load``` script.  This will download the latest dataset from data.gov.au.
+To load PHI Data: `bash nest start -- phi-load` or for production: `bash node dist/main phi-load`.
+
+This will download the latest dataset from data.gov.au.
 
 > Note: the data file is several hundred megabytes in size.  Load times can take 10-15 minutes depending
 > on you system.
 
-The final database will be ~700MB in size.
+The final database will be ~1.5GB in size.
+
+## Using the API
+
+Swagger docs can be accessed from the site root.  Eg `localhost:3000`.
+
+## Other Notes:
+### Docker build script
+`docker buildx build --platform linux/amd64 --output "type=image, push=true" --tag <repo>/phi-demo-server:1.0 --builder mybuilder .`

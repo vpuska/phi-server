@@ -2,6 +2,7 @@
  * phi-load/phi-load.module.ts
  * ---
  * @author V.Puska
+ * @date 01-Dec-2025
  */
 import {Module} from '@nestjs/common';
 import { PhiLoadService } from './phi-load.service';
@@ -14,7 +15,7 @@ import {FundsModule} from "../funds/funds.module";
   providers: [PhiLoadService],
 })
 /**
- * **PhiLoadModul**
+ * **PhiLoadModule**
  *
  * Provides {@link PhiLoadService}
  */

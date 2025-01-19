@@ -1,12 +1,13 @@
 /**
  * products/products.controller.ts
  * ---
- * Author: V.Puska
+ * @author: V.Puska
+ * @date: 12-Dec-2024
  */
 import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { ProductSearchDto } from './dto/product-search.dto';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
 
 /**
  * **ProductController** provides access to product queries and actions.

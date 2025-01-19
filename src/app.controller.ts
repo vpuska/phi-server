@@ -1,3 +1,9 @@
+/**
+ * app.controller.ts
+ * ---
+ * @Author V.Puska
+ * @Date: 01-Nov-2024
+ */
 import { Controller, Get, Redirect } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiExcludeController } from '@nestjs/swagger';
@@ -11,6 +17,7 @@ export class AppController {
     @Get()
     @Redirect("/swagger")
     root(): string {
-        return "Hello from the PHI Demo Server";
+        // not used!!
+        return this.appService.root();
     }
 }

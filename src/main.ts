@@ -1,3 +1,8 @@
+/**
+ * main.ts
+ * @author: V.Puska
+ * @Date: 01-Nov-2024
+ */
 import { AppModule } from './app.module';
 
 

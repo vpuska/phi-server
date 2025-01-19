@@ -1,6 +1,8 @@
 /**
  * funds/funds.module.ts
  * ----
+ * @author V Puska
+ * @date 01-Dec-2024
  */
 import { Module } from '@nestjs/common';
 import {TypeOrmModule} from "@nestjs/typeorm";

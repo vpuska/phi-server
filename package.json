@@ -13,7 +13,6 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "load": "nest start -- phi-load",
-    "load:force": "nest start -- phi-load force",
     "load:prod": "node dist/main phi-load",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",

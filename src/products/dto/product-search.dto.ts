@@ -1,3 +1,10 @@
+/**
+ * product-search.dto.ts
+ * ---
+ * @author V Puska
+ * @date 15-Jan-2025
+ */
+
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -10,11 +17,8 @@ const STATES = [
     "NSW", "ACT", "VIC", "QLD", "TAS", "SA", "WA", "NT"
 ]
 
-
 /**
- * product-search.dto.ts
- * ---
- * Parameters for product search
+ * ProductSearchDto - body for the products search API.
  */
 export class ProductSearchDto {
 

@@ -74,6 +74,7 @@ export class PhiLoadService {
 
         this.logger.log(`Started.`);
 
+        // clear the 'touch' flag
         this.logger.log("Clearing 'isPreset' flag on product records");
         await this.productsService.clearIsPresentFlag();
 

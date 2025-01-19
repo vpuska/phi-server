@@ -2,6 +2,7 @@
  * funds/funds.service.ts
  * ---
  * @author V.Puska
+ * @date 01-Dec-2024
  */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
