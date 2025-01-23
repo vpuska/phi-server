@@ -53,6 +53,8 @@ export class ProductsService {
         if (hospitalCover && generalCover)
             types.push("Combined")
 
+        console.log(dependantFilter);
+
         const filterTier = await this.hospitalTierRepository.findOneBy({tier: hospitalTier});
         const minimumRank = filterTier?.ranking || 0;
 

@@ -1,18 +1,13 @@
 ###
+
 POST http://localhost:3000/products/search
 Content-Type: application/json
 Accept-Encoding: gzip, deflate
 
 {
   "numberOfAdults": 2,
-  "hospitalCover": false,
-  "generalCover": true,
+  "hospitalCover": true,
+  "generalCover": false,
   "childCover": true,
-  "studentCover": false,
-  "nonStudentCover": false,
-  "conditionalNonStudentCover": false,
-  "nonClassifiedCover": false,
-  "disabilityCover": false,
-  "hospitalTier": "SilverPlus",
   "state": "WA"
 }

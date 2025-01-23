@@ -76,7 +76,8 @@ export class ProductSearchDto {
         description: "Only include products with *child* dependant cover."
     })
     @IsBoolean()
-    childCover : boolean = false;
+    @IsOptional()
+    childCover? : boolean;
 
     @ApiProperty({
         type: Boolean,
@@ -85,7 +86,8 @@ export class ProductSearchDto {
         description: "Only include products with *student* dependant cover."
     })
     @IsBoolean()
-    studentCover : boolean = false;
+    @IsOptional()
+    studentCover? : boolean;
 
     @ApiProperty({
         type: Boolean,
@@ -94,7 +96,8 @@ export class ProductSearchDto {
         description: "Only include products with *non-student* dependant cover."
     })
     @IsBoolean()
-    nonStudentCover : boolean = false;
+    @IsOptional()
+    nonStudentCover? : boolean;
 
     @ApiProperty({
         type: Boolean,
@@ -103,7 +106,8 @@ export class ProductSearchDto {
         description: "Only include products with *conditional non-student* dependant cover."
     })
     @IsBoolean()
-    conditionalNonStudentCover : boolean = false;
+    @IsOptional()
+    conditionalNonStudentCover? : boolean;
 
     @ApiProperty({
         type: Boolean,
@@ -112,7 +116,8 @@ export class ProductSearchDto {
         description: "Only include products with *non-classified* dependant cover."
     })
     @IsBoolean()
-    nonClassifiedCover : boolean = false;
+    @IsOptional()
+    nonClassifiedCover? : boolean;
 
     @ApiProperty({
         type: Boolean,
@@ -121,7 +126,8 @@ export class ProductSearchDto {
         description: "Only include products with *disabled* dependant cover."
     })
     @IsBoolean()
-    disabilityCover : boolean = false;
+    @IsOptional()
+    disabilityCover? : boolean;
 
 
 }
