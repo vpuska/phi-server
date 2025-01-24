@@ -54,6 +54,10 @@ export class Product {
     @Column({type:'boolean', default: false})
     studentCover: boolean;
 
+    // nonClassifiedCover || nonStudentCover || conditionalNonStudentCover
+    @Column({type:'boolean', default: false})
+    youngAdultCover: boolean;
+
     @Column({type:'boolean', default: false})
     nonClassifiedCover: boolean;
 

@@ -15,7 +15,7 @@ import { ProductSearchDto } from './dto/product-search.dto';
 @Controller('products')
 export class ProductsController {
 
-    static DEPENDANT_TYPES = ["child", "student", "nonStudent", "nonClassified", "conditionalNonStudent", "disability" ];
+    static DEPENDANT_TYPES = ["child", "student", "youngAdult", "disability" ];
 
     constructor(private readonly productService: ProductsService) {}
 

@@ -91,6 +91,7 @@ export class ProductsService {
                 'adultsCovered',
                 'childCover',
                 'studentCover',
+                'youngAdultCover',
                 'nonStudentCover',
                 'nonClassifiedCover',
                 'conditionalNonStudentCover',
@@ -247,9 +248,13 @@ export class ProductsService {
                 else if (title === "Student")
                     product.studentCover = covered;
                 else
-                    console.log("Invalid adult coverage:", title);
+                    this.logger.error("Invalid adult coverage:" + title);
             }
         }
+
+        product.youngAdultCover = product.nonClassifiedCover ||
+                                  product.nonStudentCover ||
+                                  product.conditionalNonStudentCover;
 
         for (const serviceNode of prodNode.getElementsByTagName("MedicalService")) {
             const covered = serviceNode.getAttribute("Cover");

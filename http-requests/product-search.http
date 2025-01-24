@@ -7,7 +7,7 @@ Accept-Encoding: gzip, deflate
 {
   "numberOfAdults": 2,
   "hospitalCover": true,
-  "generalCover": false,
-  "childCover": true,
+  "generalCover": true,
+  "youngAdultCover": true,
   "state": "WA"
 }

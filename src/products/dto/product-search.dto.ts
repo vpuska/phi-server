@@ -93,31 +93,11 @@ export class ProductSearchDto {
         type: Boolean,
         required: false,
         default: false,
-        description: "Only include products with *non-student* dependant cover."
+        description: "Only include products with *young adult* dependant cover."
     })
     @IsBoolean()
     @IsOptional()
-    nonStudentCover? : boolean;
-
-    @ApiProperty({
-        type: Boolean,
-        required: false,
-        default: false,
-        description: "Only include products with *conditional non-student* dependant cover."
-    })
-    @IsBoolean()
-    @IsOptional()
-    conditionalNonStudentCover? : boolean;
-
-    @ApiProperty({
-        type: Boolean,
-        required: false,
-        default: false,
-        description: "Only include products with *non-classified* dependant cover."
-    })
-    @IsBoolean()
-    @IsOptional()
-    nonClassifiedCover? : boolean;
+    youngAdultCover? : boolean;
 
     @ApiProperty({
         type: Boolean,
