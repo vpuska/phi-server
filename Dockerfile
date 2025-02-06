@@ -17,13 +17,14 @@ RUN npm ci
 # Bundle app source
 COPY --chown=node:node . .
 
-# Use the node user from the image (instead of the root user)
-USER node
 
 ###################
 # BUILD FOR PRODUCTION
 ###################
 FROM node:20-alpine AS build
+
+# Use the node user from the image (instead of the root user)
+USER node
 
 WORKDIR /usr/src/app
 
@@ -47,12 +48,16 @@ ENV NODE_ENV=production
 # node_modules directory is as optimized as possible
 RUN npm ci --only=production && npm cache clean --force
 
-USER node
 
 ###################
 # PRODUCTION
 ###################
 FROM node:20-alpine AS production
+
+RUN apk add --no-cache tzdata
+ENV TZ=Australia/Melbourne
+
+USER node
 
 # Copy the bundled code from the build stage to the production image
 COPY --chown=node:node --from=build /usr/src/app/node_modules ./node_modules
