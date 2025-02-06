@@ -18,8 +18,7 @@ import { HospitalTier } from './entities/hospital-tier.entity';
  */
 @Injectable()
 export class ProductsService {
-
-    logger = new Logger("ProductsService");
+    logger = new Logger('ProductsService');
 
     constructor(
         @InjectRepository(Product)
@@ -28,7 +27,7 @@ export class ProductsService {
         private readonly healthServiceRepository: Repository<HealthService>,
         @InjectRepository(HospitalTier)
         private readonly hospitalTierRepository: Repository<HospitalTier>,
-    ) { }
+    ) {}
 
     /**
      * Search products table extracting matching policies.
@@ -45,17 +44,15 @@ export class ProductsService {
         hospitalTier: string,
         state: string,
         adults: number,
-        dependantFilter: Object
+        dependantFilter: Object,
     ) {
         const types = [];
-        if (hospitalCover)
-            types.push("Hospital");
-        if (hospitalCover && generalCover)
-            types.push("Combined")
+        if (hospitalCover) types.push('Hospital');
+        if (hospitalCover && generalCover) types.push('Combined');
 
-        console.log(dependantFilter);
-
-        const filterTier = await this.hospitalTierRepository.findOneBy({tier: hospitalTier});
+        const filterTier = await this.hospitalTierRepository.findOneBy({
+            tier: hospitalTier,
+        });
         const minimumRank = filterTier?.ranking || 0;
 
         const filter = [];
@@ -67,15 +64,15 @@ export class ProductsService {
                 adultsCovered: adults,
                 status: 'Open',
                 ...dependantFilter,
-                hospitalTierRanking: {
+                hospitalTierTable: {
                     ranking: MoreThanOrEqual(minimumRank),
-                }
+                },
             });
 
         if (generalCover)
             filter.push({
                 state: In([state, 'ALL']),
-                type: "GeneralHealth",
+                type: 'GeneralHealth',
                 adultsCovered: adults,
                 status: 'Open',
                 ...dependantFilter,
@@ -89,6 +86,7 @@ export class ProductsService {
                 'type',
                 'state',
                 'adultsCovered',
+                'dependantCover',
                 'childCover',
                 'studentCover',
                 'youngAdultCover',
@@ -104,9 +102,57 @@ export class ProductsService {
                 'hospitalComponent',
                 'hospitalTier',
                 'accommodationType',
-                'services'
+                'services',
             ],
-            where: filter
+            where: filter,
+        });
+    }
+
+    /**
+     * List products table extracting matching policies.
+     * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
+     * @param type `Hospital | GeneralHealth | Combined`
+     * @param adultsCovered `0 | 1 | 2`
+     * @param dependantCover  Whether dependant conver required
+     */
+    async list(
+        state: string,
+        type: string,
+        adultsCovered: 0 | 1 | 2,
+        dependantCover: boolean,
+    ) {
+        return await this.productRepository.find({
+            select: [
+                'code',
+                'name',
+                'fundCode',
+                'type',
+                'state',
+                'adultsCovered',
+                'dependantCover',
+                'childCover',
+                'studentCover',
+                'youngAdultCover',
+                'nonStudentCover',
+                'nonClassifiedCover',
+                'conditionalNonStudentCover',
+                'disabilityCover',
+                'excess',
+                'excessPerAdmission',
+                'excessPerPerson',
+                'excessPerPolicy',
+                'premium',
+                'hospitalComponent',
+                'hospitalTier',
+                'accommodationType',
+                'services',
+            ],
+            where: {
+                type: type,
+                state: In(['ALL', state]),
+                adultsCovered: adultsCovered,
+                dependantCover: dependantCover,
+            },
         });
     }
 
@@ -115,20 +161,32 @@ export class ProductsService {
      * @param productCode Product code.
      */
     async findByOne(productCode: string) {
-        return await this.productRepository.findOneBy({code: productCode});
+        return await this.productRepository.findOneBy({ code: productCode });
     }
 
     /**
      * Add a health service.  Used by {@link PhiLoadService.run}
      * @param key 3 character abbreviated mnemonic for the service
      * @param type `H` | `G`
+     * @param tier `None` | `Basic` | `Bronze` | `Silver` | `Gold`
      * @param code PHIO service code
+     * @param description Description/label for the service
      */
-    async createHealthService(key: string, type: "H" | "G", code: string) {
+    async createHealthService(
+        key: string,
+        type: 'H' | 'G',
+        tier: 'None' | 'Basic' | 'Bronze' | 'Silver' | 'Gold',
+        code: string,
+        description?: string,
+    ) {
         const service = this.healthServiceRepository.create();
         service.key = key;
         service.serviceType = type;
         service.serviceCode = code;
+        service.hospitalTier = tier;
+        service.description = description
+            ? description
+            : code.replace(/(?!^)([A-Z])/g, ' $1'); // insert space before capital letters
         await this.healthServiceRepository.save(service);
     }
 
@@ -138,13 +196,15 @@ export class ProductsService {
      * @param serviceCode PHIO service code
      * @return  The abbreviated mnemonic
      */
-    async mapHealthService(type: string, serviceCode: string) : Promise<string> {
-        return (await this.healthServiceRepository.findOne({
-            where: {
-                serviceType: type,
-                serviceCode: serviceCode
-            }
-        })).key;
+    async mapHealthService(type: string, serviceCode: string): Promise<string> {
+        return (
+            await this.healthServiceRepository.findOne({
+                where: {
+                    serviceType: type,
+                    serviceCode: serviceCode,
+                },
+            })
+        ).key;
     }
 
     /**
@@ -170,18 +230,24 @@ export class ProductsService {
      * Sets the `isPresent` flag to `false` on all product records.  Used by {@link PhiLoadService.run}.
      */
     async clearIsPresentFlag() {
-        await this.productRepository.update({ isPresent: true }, {
-            isPresent: false
-        })
+        await this.productRepository.update(
+            { isPresent: true },
+            {
+                isPresent: false,
+            },
+        );
     }
 
     /**
      * Decommission records that have been orphaned.  Used by {@link PhiLoadService.run}.
      */
     async decommissionOrphans() {
-        await this.productRepository.update({ isPresent: false }, {
-            status: 'Orphaned'
-        })
+        await this.productRepository.update(
+            { isPresent: false },
+            {
+                status: 'Orphaned',
+            },
+        );
     }
 
     /**
@@ -191,87 +257,121 @@ export class ProductsService {
     async createFromXML(xml: any): Promise<Product> {
         let newXml = xml.toString();
         const unicodeErr = newXml.indexOf('\uFFFD');
-        if (unicodeErr >= 0)
-            newXml = newXml.replaceAll('\uFFFD', '?');
+        if (unicodeErr >= 0) newXml = newXml.replaceAll('\uFFFD', '?');
 
         const doc = new DOMParser().parseFromString(newXml, 'text/xml');
-        const prodNode = doc.getElementsByTagName("Product")[0];
-        const prodCode = prodNode.getAttribute("ProductCode");
+        const prodNode = doc.getElementsByTagName('Product')[0];
+        const prodCode = prodNode.getAttribute('ProductCode');
 
         if (unicodeErr >= 0)
-            this.logger.warn("Unicode character detected in product " + prodCode);
+            this.logger.warn(
+                'Unicode character detected in product ' + prodCode,
+            );
 
         const product = this.productRepository.create();
 
         product.code = prodCode;
-        product.fundCode = prodNode.getElementsByTagName("FundCode")[0].textContent;
-        product.name = prodNode.getElementsByTagName("Name")[0].textContent;
-        product.type = prodNode.getElementsByTagName("ProductType")[0].textContent;
-        product.status = prodNode.getElementsByTagName("ProductStatus")[0].textContent;
-        product.state = prodNode.getElementsByTagName("State")[0].textContent;
-        product.premium = +getContent(prodNode, "PremiumNoRebate", "0");
-        product.hospitalComponent = +getContent(prodNode, "PremiumHospitalComponent", "0");
-        product.excessPerPerson = +getContent(prodNode, "ExcessPerPerson", "0");
-        product.excessPerAdmission = +getContent(prodNode, "ExcessPerAdmission", "0");
-        product.excessPerPolicy = +getContent(prodNode, "ExcessPerPolicy", "0");
-        product.excess = Math.max ( product.excessPerPerson, product.excessPerAdmission, product.excessPerPolicy );
-        product.hospitalTier = "None";
-        product.services = "";
+        product.fundCode =
+            prodNode.getElementsByTagName('FundCode')[0].textContent;
+        product.name = prodNode.getElementsByTagName('Name')[0].textContent;
+        product.type =
+            prodNode.getElementsByTagName('ProductType')[0].textContent;
+        product.status =
+            prodNode.getElementsByTagName('ProductStatus')[0].textContent;
+        product.state = prodNode.getElementsByTagName('State')[0].textContent;
+        product.premium = +getContent(prodNode, 'PremiumNoRebate', '0');
+        product.hospitalComponent = +getContent(
+            prodNode,
+            'PremiumHospitalComponent',
+            '0',
+        );
+        product.excessPerPerson = +getContent(prodNode, 'ExcessPerPerson', '0');
+        product.excessPerAdmission = +getContent(
+            prodNode,
+            'ExcessPerAdmission',
+            '0',
+        );
+        product.excessPerPolicy = +getContent(prodNode, 'ExcessPerPolicy', '0');
+        product.excess = Math.max(
+            product.excessPerPerson,
+            product.excessPerAdmission,
+            product.excessPerPolicy,
+        );
+        product.hospitalTier = 'None';
+        product.services = '';
 
-        if (product.excess === product.excessPerPolicy && product.adultsCovered === 2)
+        if (
+            product.excess === product.excessPerPolicy &&
+            product.adultsCovered === 2
+        )
             product.excess = product.excess / 2;
 
-        if (product.type !== "GeneralHealth") {
-            product.hospitalTier = prodNode.getElementsByTagName("HospitalTier")[0].textContent;
-            product.accommodationType = prodNode.getElementsByTagName("Accommodation")[0].textContent;
+        if (product.type !== 'GeneralHealth') {
+            product.hospitalTier =
+                prodNode.getElementsByTagName('HospitalTier')[0].textContent;
+            product.accommodationType =
+                prodNode.getElementsByTagName('Accommodation')[0].textContent;
         }
 
-        const whoIsCoveredNode = prodNode.getElementsByTagName("WhoIsCovered")[0];
-        if (whoIsCoveredNode.getAttribute("OnlyOnePerson") === "true") {
-            product.adultsCovered = 1
+        const whoIsCoveredNode =
+            prodNode.getElementsByTagName('WhoIsCovered')[0];
+        if (whoIsCoveredNode.getAttribute('OnlyOnePerson') === 'true') {
+            product.adultsCovered = 1;
         } else {
-            const coverageNode = whoIsCoveredNode.getElementsByTagName("Coverage")[0];
-            product.adultsCovered = +coverageNode.getAttribute("NumberOfAdults");
-            for (const dependant of coverageNode.getElementsByTagName("DependantCover")) {
-                const title = dependant.getAttribute("Title");
-                const covered = (dependant.getAttribute("Covered") === "true");
-                if (title === "Child")
-                    product.childCover = covered;
-                else if (title === "ConditionalNonStudent")
+            const coverageNode =
+                whoIsCoveredNode.getElementsByTagName('Coverage')[0];
+            product.adultsCovered =
+                +coverageNode.getAttribute('NumberOfAdults');
+            for (const dependant of coverageNode.getElementsByTagName(
+                'DependantCover',
+            )) {
+                const title = dependant.getAttribute('Title');
+                const covered = dependant.getAttribute('Covered') === 'true';
+                if (title === 'Child') product.childCover = covered;
+                else if (title === 'ConditionalNonStudent')
                     product.conditionalNonStudentCover = covered;
-                else if (title === "Disability")
+                else if (title === 'Disability')
                     product.disabilityCover = covered;
-                else if (title === "NonClassified")
+                else if (title === 'NonClassified')
                     product.nonClassifiedCover = covered;
-                else if (title === "NonStudent")
+                else if (title === 'NonStudent')
                     product.nonStudentCover = covered;
-                else if (title === "Student")
-                    product.studentCover = covered;
-                else
-                    this.logger.error("Invalid adult coverage:" + title);
+                else if (title === 'Student') product.studentCover = covered;
+                else this.logger.error('Invalid adult coverage:' + title);
             }
         }
 
-        product.youngAdultCover = product.nonClassifiedCover ||
-                                  product.nonStudentCover ||
-                                  product.conditionalNonStudentCover;
+        product.youngAdultCover =
+            product.nonClassifiedCover ||
+            product.nonStudentCover ||
+            product.conditionalNonStudentCover;
 
-        for (const serviceNode of prodNode.getElementsByTagName("MedicalService")) {
-            const covered = serviceNode.getAttribute("Cover");
-            const title = serviceNode.getAttribute("Title");
-            const modifier = (covered==="Restricted") ? "-" : "";
-            if (covered !== "NotCovered") {
-                const key = await this.mapHealthService("H", title);
-                product.services = product.services + key + modifier + ";"
+        product.dependantCover =
+            product.childCover ||
+            product.studentCover ||
+            product.youngAdultCover ||
+            product.disabilityCover;
+
+        for (const serviceNode of prodNode.getElementsByTagName(
+            'MedicalService',
+        )) {
+            const covered = serviceNode.getAttribute('Cover');
+            const title = serviceNode.getAttribute('Title');
+            const modifier = covered === 'Restricted' ? '-' : '';
+            if (covered !== 'NotCovered') {
+                const key = await this.mapHealthService('H', title);
+                product.services = product.services + key + modifier + ';';
             }
         }
 
-        for (const serviceNode of prodNode.getElementsByTagName("GeneralHealthService")) {
-            const covered = serviceNode.getAttribute("Covered");
-            const title = serviceNode.getAttribute("Title");
-            if (covered === "true") {
-                const key = await this.mapHealthService("G", title);
-                product.services = product.services + key + ";"
+        for (const serviceNode of prodNode.getElementsByTagName(
+            'GeneralHealthService',
+        )) {
+            const covered = serviceNode.getAttribute('Covered');
+            const title = serviceNode.getAttribute('Title');
+            if (covered === 'true') {
+                const key = await this.mapHealthService('G', title);
+                product.services = product.services + key + ';';
             }
         }
 

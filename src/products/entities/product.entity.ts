@@ -48,6 +48,10 @@ export class Product {
     @Column({type:'int', default:0})
     adultsCovered: number;
 
+    // childCover || studentCover || youngAdultCover || disabilityCover
+    @Column({type:'boolean', default: false})
+    dependantCover: boolean;
+
     @Column({type:'boolean', default: false})
     childCover: boolean;
 
@@ -107,5 +111,5 @@ export class Product {
 
     @ManyToOne(() => HospitalTier, (tier) => tier.tier, {})
     @JoinColumn({name:'hospitalTier'})
-    hospitalTierRanking: HospitalTier;
+    hospitalTierTable: HospitalTier;
 }
