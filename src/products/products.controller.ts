@@ -129,7 +129,7 @@ export class ProductsController {
     })
     @ApiParam({
         name: 'type',
-        description: '`Hospital | GeneralHealth | Combined` - Policy type',
+        description: '`Hospital | GeneralHealth | Combined | All` - Policy type',
         example: 'Hospital',
         required: true,
     })
@@ -144,6 +144,9 @@ export class ProductsController {
         @Param('type') type: string,
         @Param('cover') cover: string,
     ) {
+        if (!["Hospital", "GeneralHealth", "Combined", "All"].includes(type)) {
+            throw new HttpException(`Invalid cover type - ${type}`, HttpStatus.BAD_REQUEST);
+        }
         if (!["1", "2", "0D", "1D", "2D"].includes(cover)) {
             throw new HttpException(`Invalid Cover Code - ${cover}`, HttpStatus.BAD_REQUEST);
         }

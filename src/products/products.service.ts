@@ -111,9 +111,9 @@ export class ProductsService {
     /**
      * List products table extracting matching policies.
      * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
-     * @param type `Hospital | GeneralHealth | Combined`
+     * @param type `Hospital | GeneralHealth | Combined | All`
      * @param adultsCovered `0 | 1 | 2`
-     * @param dependantCover  Whether dependant conver required
+     * @param dependantCover  Whether dependant cover required
      */
     async list(
         state: string,
@@ -121,6 +121,14 @@ export class ProductsService {
         adultsCovered: 0 | 1 | 2,
         dependantCover: boolean,
     ) {
+        const filter = {
+            state: In(["ALL", state]),
+            adultsCovered: adultsCovered,
+            dependantCover: dependantCover,
+        }
+        if (type!=="All")
+            filter["type"] = type;
+
         return await this.productRepository.find({
             select: [
                 'code',
@@ -147,12 +155,7 @@ export class ProductsService {
                 'accommodationType',
                 'services',
             ],
-            where: {
-                type: type,
-                state: In(['ALL', state]),
-                adultsCovered: adultsCovered,
-                dependantCover: dependantCover,
-            },
+            where: filter
         });
     }
 
