@@ -85,6 +85,8 @@ export class ProductsService {
                 'fundCode',
                 'type',
                 'state',
+                'onlyAvailableWith',
+                'onlyAvailableWithProducts',
                 'adultsCovered',
                 'dependantCover',
                 'childCover',
@@ -125,9 +127,13 @@ export class ProductsService {
             state: In(["ALL", state]),
             adultsCovered: adultsCovered,
             dependantCover: dependantCover,
+            status: "Open",
         }
-        if (type!=="All")
+
+        if (type !== "Combined") {
             filter["type"] = type;
+            filter["onlyAvailableWith"] = "NotApplicable";
+        }
 
         return await this.productRepository.find({
             select: [
@@ -136,6 +142,8 @@ export class ProductsService {
                 'fundCode',
                 'type',
                 'state',
+                'onlyAvailableWith',
+                'onlyAvailableWithProducts',
                 'adultsCovered',
                 'dependantCover',
                 'childCover',
@@ -267,33 +275,20 @@ export class ProductsService {
         const prodCode = prodNode.getAttribute('ProductCode');
 
         if (unicodeErr >= 0)
-            this.logger.warn(
-                'Unicode character detected in product ' + prodCode,
-            );
+            this.logger.warn('Unicode character detected in product ' + prodCode);
 
         const product = this.productRepository.create();
 
         product.code = prodCode;
-        product.fundCode =
-            prodNode.getElementsByTagName('FundCode')[0].textContent;
+        product.fundCode = prodNode.getElementsByTagName('FundCode')[0].textContent;
         product.name = prodNode.getElementsByTagName('Name')[0].textContent;
-        product.type =
-            prodNode.getElementsByTagName('ProductType')[0].textContent;
-        product.status =
-            prodNode.getElementsByTagName('ProductStatus')[0].textContent;
+        product.type = prodNode.getElementsByTagName('ProductType')[0].textContent;
+        product.status = prodNode.getElementsByTagName('ProductStatus')[0].textContent;
         product.state = prodNode.getElementsByTagName('State')[0].textContent;
         product.premium = +getContent(prodNode, 'PremiumNoRebate', '0');
-        product.hospitalComponent = +getContent(
-            prodNode,
-            'PremiumHospitalComponent',
-            '0',
-        );
+        product.hospitalComponent = +getContent(prodNode, 'PremiumHospitalComponent', '0');
         product.excessPerPerson = +getContent(prodNode, 'ExcessPerPerson', '0');
-        product.excessPerAdmission = +getContent(
-            prodNode,
-            'ExcessPerAdmission',
-            '0',
-        );
+        product.excessPerAdmission = +getContent(prodNode, 'ExcessPerAdmission', '0' );
         product.excessPerPolicy = +getContent(prodNode, 'ExcessPerPolicy', '0');
         product.excess = Math.max(
             product.excessPerPerson,
@@ -303,31 +298,26 @@ export class ProductsService {
         product.hospitalTier = 'None';
         product.services = '';
 
-        if (
-            product.excess === product.excessPerPolicy &&
-            product.adultsCovered === 2
-        )
+        const elem = prodNode.getElementsByTagName("OnlyAvailableWith")[0].firstChild as XMLElement;
+        product.onlyAvailableWith = elem.tagName;
+        if (elem.tagName === "Products")
+            product.onlyAvailableWithProducts = elem.textContent;
+
+        if (product.excess === product.excessPerPolicy && product.adultsCovered === 2)
             product.excess = product.excess / 2;
 
         if (product.type !== 'GeneralHealth') {
-            product.hospitalTier =
-                prodNode.getElementsByTagName('HospitalTier')[0].textContent;
-            product.accommodationType =
-                prodNode.getElementsByTagName('Accommodation')[0].textContent;
+            product.hospitalTier = prodNode.getElementsByTagName('HospitalTier')[0].textContent;
+            product.accommodationType = prodNode.getElementsByTagName('Accommodation')[0].textContent;
         }
 
-        const whoIsCoveredNode =
-            prodNode.getElementsByTagName('WhoIsCovered')[0];
+        const whoIsCoveredNode = prodNode.getElementsByTagName('WhoIsCovered')[0];
         if (whoIsCoveredNode.getAttribute('OnlyOnePerson') === 'true') {
             product.adultsCovered = 1;
         } else {
-            const coverageNode =
-                whoIsCoveredNode.getElementsByTagName('Coverage')[0];
-            product.adultsCovered =
-                +coverageNode.getAttribute('NumberOfAdults');
-            for (const dependant of coverageNode.getElementsByTagName(
-                'DependantCover',
-            )) {
+            const coverageNode = whoIsCoveredNode.getElementsByTagName('Coverage')[0];
+            product.adultsCovered = +coverageNode.getAttribute('NumberOfAdults');
+            for (const dependant of coverageNode.getElementsByTagName('DependantCover')) {
                 const title = dependant.getAttribute('Title');
                 const covered = dependant.getAttribute('Covered') === 'true';
                 if (title === 'Child') product.childCover = covered;
@@ -355,9 +345,7 @@ export class ProductsService {
             product.youngAdultCover ||
             product.disabilityCover;
 
-        for (const serviceNode of prodNode.getElementsByTagName(
-            'MedicalService',
-        )) {
+        for (const serviceNode of prodNode.getElementsByTagName('MedicalService')) {
             const covered = serviceNode.getAttribute('Cover');
             const title = serviceNode.getAttribute('Title');
             const modifier = covered === 'Restricted' ? '-' : '';
@@ -367,9 +355,7 @@ export class ProductsService {
             }
         }
 
-        for (const serviceNode of prodNode.getElementsByTagName(
-            'GeneralHealthService',
-        )) {
+        for (const serviceNode of prodNode.getElementsByTagName('GeneralHealthService')) {
             const covered = serviceNode.getAttribute('Covered');
             const title = serviceNode.getAttribute('Title');
             if (covered === 'true') {

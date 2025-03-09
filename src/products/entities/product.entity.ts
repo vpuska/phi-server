@@ -42,6 +42,12 @@ export class Product {
     @Column({length:8})
     status: string;  // Open, Closed, Orphaned
 
+    @Column({length:16, nullable:true})
+    onlyAvailableWith: string; // NotApplicable, AnyHospital, AnyGeneralHealth, Products
+
+    @Column({length:256, nullable:true})
+    onlyAvailableWithProducts: string;
+
     @Column({length:3})
     state: string;
 
