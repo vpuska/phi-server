@@ -51,6 +51,12 @@ export class Product {
     @Column({length:3})
     state: string;
 
+    @Column({default:false})
+    isCorporate: boolean;
+
+    @Column({length:32, nullable:true})
+    brands: string;
+
     @Column({type:'int', default:0})
     adultsCovered: number;
 

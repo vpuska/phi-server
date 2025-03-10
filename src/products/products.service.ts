@@ -297,6 +297,11 @@ export class ProductsService {
         );
         product.hospitalTier = 'None';
         product.services = '';
+        product.isCorporate = prodNode.getElementsByTagName('Corporate')[0].getAttribute('IsCorporate') === "true";
+        product.brands = product.fundCode;
+
+        for (const brand of prodNode.getElementsByTagName('Brands')[0].childNodes)
+            product.brands += `;${brand.textContent}`
 
         const elem = prodNode.getElementsByTagName("OnlyAvailableWith")[0].firstChild as XMLElement;
         product.onlyAvailableWith = elem.tagName;
@@ -371,7 +376,7 @@ export class ProductsService {
 }
 
 /**
- * Returns the content of an XML note.
+ * Returns the content of an XML node.
  * @param node The node to search
  * @param tag The tag to search for
  * @param defaultValue The default value to return if not found or empty
