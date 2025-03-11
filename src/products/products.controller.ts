@@ -20,7 +20,7 @@ export class ProductsController {
 
     /**
      * Find a single product using the product code.  Code is split into 2 fields because the
-     * product code includes a `/` character.  Eg `I119/WNDI2D`
+     * product code includes the `/` character.  Eg `I119/WNDI2D`
      *
      * Returns the product code and xml.
      *
@@ -71,55 +71,16 @@ export class ProductsController {
         return this.productService.serviceList();
     }
 
-    @Post('search')
-    @HttpCode(200)
-    @ApiOperation({
-        summary: 'Return a list products matching search criteria',
-        description:
-            'Filters products matching the search criteria.<br>' +
-            '- State you live in<br>' +
-            '- Product type required (Hospital/General Medical or both)<br>' +
-            '- Minimum hospital tier<br>' +
-            '- Dependant filters<br><br>' +
-            'See the `ProductSearchDto` schema for further details.<br><br>' +
-            'Note: The result sets can be large and affect browser performance.  Set `disabilityCover = true` to ' +
-            'return a small result set.',
-    })
-    search(@Body() filter: ProductSearchDto) {
-        const dependantFilter = {};
-        // Only condition specified dependant filters
-        for (const dependant of ProductsController.DEPENDANT_TYPES) {
-            const property = `${dependant}Cover`;
-            if (filter.hasOwnProperty(property))
-                dependantFilter[property] = filter[property];
-        }
-        // If no filters specified for dependants, then set all to false.
-        if (Object.keys(dependantFilter).length === 0) {
-            for (const dependant of ProductsController.DEPENDANT_TYPES) {
-                const property = `${dependant}Cover`;
-                dependantFilter[property] = false;
-            }
-        }
-
-        return this.productService.search(
-            filter.hospitalCover,
-            filter.generalCover,
-            filter.hospitalTier ? filter.hospitalTier : 'None',
-            filter.state === 'ACT' ? 'NSW' : filter.state,
-            filter.numberOfAdults,
-            dependantFilter,
-        );
-    }
     /**
-     * Return a list of matching products.
+     * Return a list of matching OPEN products by state/type/adults/dependants.
      * @param state State
      * @param type `Hospital | GeneralHealth | Combined`
      * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
      */
     @Get(':state/:type/:cover')
     @ApiOperation({
-        summary: 'Return a list products matching search criteria',
-        description: 'Return a list of hospital and general medical services.',
+        summary: 'Return a list OPEN products matching search criteria',
+        description: 'Return a list OPEN products matching search criteria: state, type and cover',
     })
     @ApiParam({
         name: 'state',
@@ -144,7 +105,7 @@ export class ProductsController {
         @Param('type') type: string,
         @Param('cover') cover: string,
     ) {
-        if (!["Hospital", "GeneralHealth", "Combined", "All"].includes(type)) {
+        if (!["Hospital", "GeneralHealth", "Combined"].includes(type)) {
             throw new HttpException(`Invalid cover type - ${type}`, HttpStatus.BAD_REQUEST);
         }
         if (!["1", "2", "0D", "1D", "2D"].includes(cover)) {
@@ -156,5 +117,25 @@ export class ProductsController {
             +cover[0] as 0 | 1 | 2,
             cover[1] === 'D',
         );
+    }
+
+    /**
+     * Return a list of OPEN products for a single fund or brand.
+     */
+    @Get(':fundOrBrand')
+    @ApiOperation({
+        summary: 'Return a list of all OPEN products for a single fund or brand.',
+        description: 'Return a list of all OPEN products for a single fund or brand.',
+    })
+    @ApiParam({
+        name: 'fundOrBrand',
+        description: 'Fund or Brand code.',
+        example: 'NIB03',
+        required: true,
+    })
+    listForFundOrBrand(
+        @Param('fundOrBrand') fundOrBrand: string
+    ) {
+        return this.productService.findByFundOrBrand(fundOrBrand);
     }
 }

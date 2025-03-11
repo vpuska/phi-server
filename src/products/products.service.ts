@@ -6,13 +6,44 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { FindOptionsSelect, In, IsNull, Like, Repository } from "typeorm";
 import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
-
 
 import { Product } from "src/products/entities/product.entity";
 import { HealthService } from "./entities/health-service.entity";
 import { HospitalTier } from './entities/hospital-tier.entity';
+import { Fund } from "../funds/entities/fund.entity";
+
+const LIST_FIELDS = [
+    'code',
+    'name',
+    'fundCode',
+    'type',
+    'isCorporate',
+    'brands',
+    'state',
+    'onlyAvailableWith',
+    'onlyAvailableWithProducts',
+    'adultsCovered',
+    'dependantCover',
+    'childCover',
+    'studentCover',
+    'youngAdultCover',
+    'nonStudentCover',
+    'nonClassifiedCover',
+    'conditionalNonStudentCover',
+    'disabilityCover',
+    'excess',
+    'excessPerAdmission',
+    'excessPerPerson',
+    'excessPerPolicy',
+    'premium',
+    'hospitalComponent',
+    'hospitalTier',
+    'accommodationType',
+    'services',
+]
+
 /**
  * **ProductService**
  */
@@ -30,88 +61,7 @@ export class ProductsService {
     ) {}
 
     /**
-     * Search products table extracting matching policies.
-     * @param hospitalCover `true` to select hospital cover
-     * @param generalCover `true` to select general cover
-     * @param hospitalTier `Basic`, `BasicPlus`, etc..
-     * @param state `NSW`, `VIC`, `QLD`, `TAS`, `SA`, `WA` or `NT`
-     * @param adults `0`, `1` or `2`
-     * @param dependantFilter  Object of dependent cover flags
-     */
-    async search(
-        hospitalCover: boolean,
-        generalCover: boolean,
-        hospitalTier: string,
-        state: string,
-        adults: number,
-        dependantFilter: Object,
-    ) {
-        const types = [];
-        if (hospitalCover) types.push('Hospital');
-        if (hospitalCover && generalCover) types.push('Combined');
-
-        const filterTier = await this.hospitalTierRepository.findOneBy({
-            tier: hospitalTier,
-        });
-        const minimumRank = filterTier?.ranking || 0;
-
-        const filter = [];
-
-        if (hospitalCover)
-            filter.push({
-                state: In([state, 'ALL']),
-                type: In(types),
-                adultsCovered: adults,
-                status: 'Open',
-                ...dependantFilter,
-                hospitalTierTable: {
-                    ranking: MoreThanOrEqual(minimumRank),
-                },
-            });
-
-        if (generalCover)
-            filter.push({
-                state: In([state, 'ALL']),
-                type: 'GeneralHealth',
-                adultsCovered: adults,
-                status: 'Open',
-                ...dependantFilter,
-            });
-
-        return await this.productRepository.find({
-            select: [
-                'code',
-                'name',
-                'fundCode',
-                'type',
-                'state',
-                'onlyAvailableWith',
-                'onlyAvailableWithProducts',
-                'adultsCovered',
-                'dependantCover',
-                'childCover',
-                'studentCover',
-                'youngAdultCover',
-                'nonStudentCover',
-                'nonClassifiedCover',
-                'conditionalNonStudentCover',
-                'disabilityCover',
-                'excess',
-                'excessPerAdmission',
-                'excessPerPerson',
-                'excessPerPolicy',
-                'premium',
-                'hospitalComponent',
-                'hospitalTier',
-                'accommodationType',
-                'services',
-            ],
-            where: filter,
-        });
-    }
-
-    /**
-     * List products table extracting matching policies.
+     * List OPEN, non-Corporate products table extracting matching policies for state/type/adults/dependants.
      * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
      * @param type `Hospital | GeneralHealth | Combined | All`
      * @param adultsCovered `0 | 1 | 2`
@@ -127,6 +77,7 @@ export class ProductsService {
             state: In(["ALL", state]),
             adultsCovered: adultsCovered,
             dependantCover: dependantCover,
+            isCorporate: false,
             status: "Open",
         }
 
@@ -136,35 +87,26 @@ export class ProductsService {
         }
 
         return await this.productRepository.find({
-            select: [
-                'code',
-                'name',
-                'fundCode',
-                'type',
-                'state',
-                'onlyAvailableWith',
-                'onlyAvailableWithProducts',
-                'adultsCovered',
-                'dependantCover',
-                'childCover',
-                'studentCover',
-                'youngAdultCover',
-                'nonStudentCover',
-                'nonClassifiedCover',
-                'conditionalNonStudentCover',
-                'disabilityCover',
-                'excess',
-                'excessPerAdmission',
-                'excessPerPerson',
-                'excessPerPolicy',
-                'premium',
-                'hospitalComponent',
-                'hospitalTier',
-                'accommodationType',
-                'services',
-            ],
+            select: LIST_FIELDS as FindOptionsSelect<Product>,
             where: filter
         });
+    }
+
+    /**
+     * List all OPEN products table extracting policies for a single fund or brand Includes corporate products.
+     * @param fundOrBrandCode
+     */
+    async findByFundOrBrand(fundOrBrandCode: string) {
+        const fundCode = fundOrBrandCode.substring(0, 3);
+        const filter = {
+            fundCode: fundCode,
+            status: "Open",
+            brands: fundCode === fundOrBrandCode ? IsNull() : Like(`%${fundOrBrandCode}%`),
+        };
+        return await this.productRepository.find({
+            select: LIST_FIELDS as FindOptionsSelect<Product>,
+            where: filter
+        })
     }
 
     /**
@@ -298,10 +240,14 @@ export class ProductsService {
         product.hospitalTier = 'None';
         product.services = '';
         product.isCorporate = prodNode.getElementsByTagName('Corporate')[0].getAttribute('IsCorporate') === "true";
-        product.brands = product.fundCode;
+        product.brands = null;
 
-        for (const brand of prodNode.getElementsByTagName('Brands')[0].childNodes)
-            product.brands += `;${brand.textContent}`
+        for (const brand of prodNode.getElementsByTagName('Brands')[0].childNodes) {
+            if (product.brands === null)
+                product.brands = brand.textContent
+            else
+                product.brands += `;${brand.textContent}`
+        }
 
         const elem = prodNode.getElementsByTagName("OnlyAvailableWith")[0].firstChild as XMLElement;
         product.onlyAvailableWith = elem.tagName;

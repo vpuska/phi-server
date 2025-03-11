@@ -33,7 +33,6 @@ const URL = "https://data.gov.au/api/3/action/package_show?id=private-health-ins
 export class PhiLoadService {
 
     logger = new Logger("PHI Load");
-    force_mode = false;
 
     constructor(
         private readonly fundsService: FundsService,
