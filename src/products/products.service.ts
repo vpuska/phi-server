@@ -12,7 +12,6 @@ import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
 import { Product } from "src/products/entities/product.entity";
 import { HealthService } from "./entities/health-service.entity";
 import { HospitalTier } from './entities/hospital-tier.entity';
-import { Fund } from "../funds/entities/fund.entity";
 
 const LIST_FIELDS = [
     'code',

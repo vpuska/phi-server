@@ -4,10 +4,9 @@
  * @author: V.Puska
  * @date: 12-Dec-2024
  */
-import { Body, Controller, Get, HttpException, HttpStatus, HttpCode, NotFoundException, Param, Post } from "@nestjs/common";
+import { Controller, Get, HttpException, HttpStatus, NotFoundException, Param } from "@nestjs/common";
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
-import { ProductSearchDto } from './dto/product-search.dto';
 
 /**
  * **ProductController** provides access to product queries and actions.
