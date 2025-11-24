@@ -6,11 +6,11 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsSelect, In, IsNull, Like, Repository } from "typeorm";
+import { FindOperator, FindOptionsSelect, In, IsNull, Like, Repository } from 'typeorm';
 import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
 
-import { Product } from "src/products/entities/product.entity";
-import { HealthService } from "./entities/health-service.entity";
+import { Product } from 'src/products/entities/product.entity';
+import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
 
 const LIST_FIELDS = [
@@ -41,7 +41,7 @@ const LIST_FIELDS = [
     'hospitalTier',
     'accommodationType',
     'services',
-]
+];
 
 /**
  * **ProductService**
@@ -57,7 +57,8 @@ export class ProductsService {
         private readonly healthServiceRepository: Repository<HealthService>,
         @InjectRepository(HospitalTier)
         private readonly hospitalTierRepository: Repository<HospitalTier>,
-    ) {}
+    ) {
+    }
 
     /**
      * List OPEN, non-Corporate products table extracting matching policies for state/type/adults/dependants.
@@ -73,35 +74,42 @@ export class ProductsService {
         dependantCover: boolean,
     ) {
         const filter = {
-            state: In(["ALL", state]),
+            state: In(['ALL', state]),
             adultsCovered: adultsCovered,
             dependantCover: dependantCover,
             isCorporate: false,
-            status: "Open",
-        }
+            status: 'Open',
+        };
 
-        if (type !== "Combined") {
-            filter["type"] = type;
-            filter["onlyAvailableWith"] = "NotApplicable";
+        if (type !== 'Combined') {
+            filter['type'] = type;
+            filter['onlyAvailableWith'] = 'NotApplicable';
         }
 
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
-            where: filter
+            where: filter,
         });
     }
 
     /**
-     * List all OPEN products table extracting policies for a single fund or brand Includes corporate products.
+     * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.  If
+     * querying for a fund, all brand products are included.
+     * The fundOrBrandCode can be a:
+     * - a fund: Eg. `ACA`
+     * - a brand: Eg. `NIB01`
+     *
      * @param fundOrBrandCode
      */
     async findByFundOrBrand(fundOrBrandCode: string) {
         const fundCode = fundOrBrandCode.substring(0, 3);
-        const filter = {
+        const isBrand = fundOrBrandCode.length === 5;
+        let filter: { fundCode: string; status: string; brands?: FindOperator<any>; } = {
             fundCode: fundCode,
-            status: "Open",
-            brands: fundCode === fundOrBrandCode ? IsNull() : Like(`%${fundOrBrandCode}%`),
-        };
+            status: 'Open',
+        }
+        if (isBrand)
+            filter.brands = Like(`%${fundOrBrandCode}%`);
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
             where: filter

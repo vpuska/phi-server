@@ -119,21 +119,24 @@ export class ProductsController {
     }
 
     /**
-     * Return a list of OPEN products for a single fund or brand.
-     */
+     * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
+     * The fundOrBrandCode can be a:
+     * - a fund: Eg. `ACA`
+     * - a brand: Eg. `NIB01`
+     * */
     @Get(':fundOrBrand')
     @ApiOperation({
         summary: 'Return a list of all OPEN products for a single fund or brand.',
-        description: 'Return a list of all OPEN products for a single fund or brand.',
+        description: 'Return a list of all OPEN products for a single fund or brand.  If selecting a fund, all sub-brands are returned.',
     })
     @ApiParam({
         name: 'fundOrBrand',
-        description: 'Fund or Brand code.',
+        description: 'Fund code or brand.',
         example: 'NIB03',
         required: true,
     })
     listForFundOrBrand(
-        @Param('fundOrBrand') fundOrBrand: string
+        @Param('fundOrBrand') fundOrBrand: string,
     ) {
         return this.productService.findByFundOrBrand(fundOrBrand);
     }
