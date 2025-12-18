@@ -20,11 +20,11 @@ import { HospitalTier } from './hospital-tier.entity';
 @Entity({name: 'products'})
 @Index(['state', 'adultsCovered', 'childCover'])
 export class Product {
+    @PrimaryColumn({length:3})
+    fundCode: string;
+
     @PrimaryColumn({length:16})
     code: string;
-
-    @Column({length:5})
-    fundCode: string;
 
     @ManyToOne(() => Fund, (fund) => fund.code, {
         createForeignKeyConstraints: true,
@@ -117,9 +117,6 @@ export class Product {
     // imported dataset - most likely because the product is closed or was created in error.
     @Column({type:'boolean', default:true})
     isPresent: boolean;
-
-    @Column({type:'text', nullable:true})
-    xml: string;
 
     @ManyToOne(() => HospitalTier, (tier) => tier.tier, {})
     @JoinColumn({name:'hospitalTier'})

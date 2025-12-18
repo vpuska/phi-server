@@ -13,11 +13,12 @@ import { ProductsService } from './products.service';
 import { Product } from "./entities/product.entity";
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
+import { AppService } from '../app.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Product, HealthService, HospitalTier])],
   exports: [TypeOrmModule, ProductsService],
-  providers: [ProductsService],
+  providers: [ProductsService, AppService],
   controllers: [ProductsController]
 })
 export class ProductsModule {}

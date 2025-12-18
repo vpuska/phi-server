@@ -26,7 +26,16 @@ The project is organised in accordance with NestJS guidelines.  Simply download 
 
 > Note: the project uses sqlite3 by default.  You may also use MariaDB, but it has not been adequately tested.  I recommend using
 > sqlite3 given the nature of the data and project.
- 
+
+## Environment File
+
+```
+DATABASE=SQLITE
+DATABASE_NAME=phidb.sqlite3
+PRODUCT_XML_DIRECTORY=xml/products
+PRODUCT_XML_COMPRESSION=on
+```
+
 ## Loading PHI Data
 
 To load PHI Data: `bash nest start -- phi-load` or for production: `bash node dist/main phi-load`.

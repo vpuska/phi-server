@@ -6,12 +6,17 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOperator, FindOptionsSelect, In, IsNull, Like, Repository } from 'typeorm';
+import { FindOperator, FindOptionsSelect, In, Like, Repository } from 'typeorm';
 import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
+import * as fs from 'node:fs';
+import * as zlib from 'node:zlib';
 
 import { Product } from 'src/products/entities/product.entity';
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
+import { AppService } from '../app.service';
+import { gunzip } from 'node:zlib';
+import { promisify } from 'node:util';
 
 const LIST_FIELDS = [
     'code',
@@ -57,8 +62,8 @@ export class ProductsService {
         private readonly healthServiceRepository: Repository<HealthService>,
         @InjectRepository(HospitalTier)
         private readonly hospitalTierRepository: Repository<HospitalTier>,
-    ) {
-    }
+        private readonly appService: AppService,
+    ) {}
 
     /**
      * List OPEN, non-Corporate products table extracting matching policies for state/type/adults/dependants.
@@ -99,29 +104,41 @@ export class ProductsService {
      * - a fund: Eg. `ACA`
      * - a brand: Eg. `NIB01`
      *
-     * @param fundOrBrandCode
+     * @param fundCode
      */
-    async findByFundOrBrand(fundOrBrandCode: string) {
-        const fundCode = fundOrBrandCode.substring(0, 3);
-        const isBrand = fundOrBrandCode.length === 5;
-        let filter: { fundCode: string; status: string; brands?: FindOperator<any>; } = {
-            fundCode: fundCode,
-            status: 'Open',
-        }
-        if (isBrand)
-            filter.brands = Like(`%${fundOrBrandCode}%`);
+    async findByFund(fundCode: string) {
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
-            where: filter
+            where: {
+                fundCode: fundCode,
+                status: 'Open',
+            }
         })
     }
 
     /**
      * Find single product.
+     * @param fundCode Fund code.
      * @param productCode Product code.
      */
-    async findByOne(productCode: string) {
-        return await this.productRepository.findOneBy({ code: productCode });
+    async findByOne(fundCode, productCode: string) {
+        return await this.productRepository.findOneBy({ fundCode: fundCode, code: productCode });
+    }
+
+    /**
+     * Get the XML data for a single product.
+     * @param fundCode Fund code.
+     * @param productCode Product code.
+     */
+    async getXml(fundCode: string, productCode: string) {
+        const filename = `${this.appService.productXmlDirectory}/${fundCode}/${productCode}`
+
+        if (this.appService.writeUncompressedProductXml)
+            return fs.readFileSync(filename).toString();
+
+        const unzip = promisify(gunzip)
+        const data = await unzip(fs.readFileSync(`${filename}.gz`))
+        return data.toString();
     }
 
     /**
@@ -222,14 +239,31 @@ export class ProductsService {
         const doc = new DOMParser().parseFromString(newXml, 'text/xml');
         const prodNode = doc.getElementsByTagName('Product')[0];
         const prodCode = prodNode.getAttribute('ProductCode');
+        const fundCode = prodNode.getElementsByTagName('FundCode')[0].textContent;
 
         if (unicodeErr >= 0)
             this.logger.warn('Unicode character detected in product ' + prodCode);
 
+        fs.mkdirSync(`xml/products/${fundCode}/${prodCode.split("/")[0]}`, {recursive: true});
+
+        // Create an uncompressed product xml file
+        if (this.appService.writeUncompressedProductXml)
+            fs.writeFileSync( `${this.appService.productXmlDirectory}/${fundCode}/${prodCode}`, newXml);
+
+        // Create a compressed product xml file
+        if (this.appService.writeCompressedProductXml) {
+            const output = fs.createWriteStream(`${this.appService.productXmlDirectory}/${fundCode}/${prodCode}.gz`);
+            const gzip = zlib.createGzip();
+            const buffer = Buffer.from(newXml, 'utf-8');
+            require("stream").Readable.from(buffer)
+                .pipe(gzip)
+                .pipe(output)
+        }
+
         const product = this.productRepository.create();
 
         product.code = prodCode;
-        product.fundCode = prodNode.getElementsByTagName('FundCode')[0].textContent;
+        product.fundCode = fundCode;
         product.name = prodNode.getElementsByTagName('Name')[0].textContent;
         product.type = prodNode.getElementsByTagName('ProductType')[0].textContent;
         product.status = prodNode.getElementsByTagName('ProductStatus')[0].textContent;
@@ -322,7 +356,6 @@ export class ProductsService {
             }
         }
 
-        product.xml = newXml;
         product.isPresent = true;
         return await this.productRepository.save(product);
     }

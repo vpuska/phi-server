@@ -44,10 +44,11 @@ function typeOrmSettings(): DynamicModule {
     }
 
     if (type==='SQLITE') {
-        logger.log('Using SQLITE');
+        const dbname = process.env['DATABASE_NAME'] || "database.sqlite3"
+        logger.log('SQLITE DB=' + dbname);
         return TypeOrmModule.forRoot({
             type: 'better-sqlite3',
-            database: process.env.SQLITE_DATABASE || 'database.sqlite3',
+            database: dbname,
             autoLoadEntities: true,
             synchronize: true,
         })
@@ -55,6 +56,7 @@ function typeOrmSettings(): DynamicModule {
 
     throw `Invalid database type: ${type}`;
 }
+
 /**
  * Main application module.
  */
@@ -68,6 +70,7 @@ function typeOrmSettings(): DynamicModule {
     ],
     controllers: [AppController],
     providers: [AppService],
+    exports: [AppService],
 })
 export class AppModule {
     /**
@@ -108,6 +111,11 @@ export class AppModule {
             whitelist: true,
             forbidNonWhitelisted: true
         }));
+
+        const appService = app.get(AppService);
+        logger.log("PRODUCT_XML_DIRECTORY=" + appService.productXmlDirectory);
+        logger.log("PRODUCT_XML_COMPRESSION=" + appService.productXmlCompression);
+
         await app.listen(process.env.PORT ?? 3000);
     }
     /**
@@ -115,6 +123,9 @@ export class AppModule {
      */
     static async run_phiload() {
         const app = await NestFactory.createApplicationContext(AppModule);
+        logger.log("PRODUCT_XML_DIRECTORY=" + app.get(AppService).productXmlDirectory);
+        logger.log("PRODUCT_XML_COMPRESSION=" + app.get(AppService).productXmlCompression);
+
         const loader = app.get(PhiLoadService);
         await loader.run();
         process.exit(0);

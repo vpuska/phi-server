@@ -4,7 +4,7 @@
  * @author: V.Puska
  * @date: 12-Dec-2024
  */
-import { Controller, Get, HttpException, HttpStatus, NotFoundException, Param } from "@nestjs/common";
+import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 
@@ -13,25 +13,29 @@ import { ProductsService } from './products.service';
  */
 @Controller('products')
 export class ProductsController {
-    static DEPENDANT_TYPES = ['child', 'student', 'youngAdult', 'disability'];
 
     constructor(private readonly productService: ProductsService) {}
 
     /**
-     * Find a single product using the product code.  Code is split into 2 fields because the
+     * Retrieve the XML data for a single product.  Code is split into 2 fields because the
      * product code includes the `/` character.  Eg `I119/WNDI2D`
      *
-     * Returns the product code and xml.
-     *
+     * @param fundCode - The fund for this product.  Eg. HIF
      * @param code1 - 1st part of product code.  Eg ```I119```
      * @param code2 - Snd part of product code.  Eg. ```WND12D```
      */
-    @Get('xml/:code1/:code2')
+    @Get('xml/:fundCode/:code1/:code2')
+    @Header('content-type', 'application/xml')
     @ApiOperation({
-        summary: 'Return a single product.',
+        summary: 'Return XML for a single product.',
         description:
-            'Return a simple record identified by its product code.  The product code ' +
-            'is the "PHIS" code.  Eg. `I119/WND12D`',
+            'Returns the XML for a sing product using the product code as a key. Eg: `I119/WND12D`',
+    })
+    @ApiParam({
+        name: 'fundCode',
+        description: 'The fund code for this product.',
+        example: 'HIF',
+        required: true,
     })
     @ApiParam({
         name: 'code1',
@@ -45,15 +49,16 @@ export class ProductsController {
         example: 'WND12D',
         required: true,
     })
-    async findOne(
+    async getXML(
+        @Param('fundCode') fundCode: string,
         @Param('code1') code1: string,
         @Param('code2') code2: string,
     ) {
-        const product = await this.productService.findByOne(
-            `${code1}/${code2}`,
-        );
-        if (product) return { code: product.code, xml: product.xml };
-        else throw new NotFoundException(`Product ${code1}/${code2} found.`);
+        const product = await this.productService.getXml(fundCode, `${code1}/${code2}`)
+        if (product)
+            return product;
+        else
+            throw new NotFoundException(`Product ${code1}/${code2} found.`);
     }
 
     /**
@@ -89,7 +94,7 @@ export class ProductsController {
     })
     @ApiParam({
         name: 'type',
-        description: '`Hospital | GeneralHealth | Combined | All` - Policy type',
+        description: '`Hospital | GeneralHealth | Combined` - Policy type',
         example: 'Hospital',
         required: true,
     })
@@ -120,24 +125,22 @@ export class ProductsController {
 
     /**
      * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
-     * The fundOrBrandCode can be a:
-     * - a fund: Eg. `ACA`
-     * - a brand: Eg. `NIB01`
+     * @param fundCode
      * */
-    @Get(':fundOrBrand')
+    @Get(':fundCode')
     @ApiOperation({
-        summary: 'Return a list of all OPEN products for a single fund or brand.',
-        description: 'Return a list of all OPEN products for a single fund or brand.  If selecting a fund, all sub-brands are returned.',
+        summary: 'Return a list of all OPEN products for a single fund\.',
+        description: 'Return a list of all OPEN products for a single fund.  Result includes all sub-brands.',
     })
     @ApiParam({
-        name: 'fundOrBrand',
-        description: 'Fund code or brand.',
-        example: 'NIB03',
+        name: 'fundCode',
+        description: 'Fund code.',
+        example: 'NIB',
         required: true,
     })
     listForFundOrBrand(
-        @Param('fundOrBrand') fundOrBrand: string,
+        @Param('fundCode') fundCode: string,
     ) {
-        return this.productService.findByFundOrBrand(fundOrBrand);
+        return this.productService.findByFund(fundCode);
     }
 }

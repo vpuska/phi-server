@@ -22,6 +22,7 @@ import {ProductsService} from "../products/products.service";
 import {pipeline} from 'node:stream/promises';
 import {Injectable} from '@nestjs/common';
 import {Logger} from "@nestjs/common"
+import { AppService } from '../app.service';
 
 // Link to PHIO datasets hosted on data.gov.au
 const URL = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
