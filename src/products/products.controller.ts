@@ -81,7 +81,7 @@ export class ProductsController {
      * @param type `Hospital | GeneralHealth | Combined`
      * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
      */
-    @Get(':state/:type/:cover')
+    @Get('search/:state/:type/:cover')
     @ApiOperation({
         summary: 'Return a list OPEN products matching search criteria',
         description: 'Return a list OPEN products matching search criteria: state, type and cover',
@@ -127,9 +127,9 @@ export class ProductsController {
      * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
      * @param fundCode
      * */
-    @Get(':fundCode')
+    @Get('fund/:fundCode')
     @ApiOperation({
-        summary: 'Return a list of all OPEN products for a single fund\.',
+        summary: 'Return a list of all OPEN products for a single fund.',
         description: 'Return a list of all OPEN products for a single fund.  Result includes all sub-brands.',
     })
     @ApiParam({
