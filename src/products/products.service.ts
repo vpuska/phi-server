@@ -244,7 +244,7 @@ export class ProductsService {
         if (unicodeErr >= 0)
             this.logger.warn('Unicode character detected in product ' + prodCode);
 
-        fs.mkdirSync(`xml/products/${fundCode}/${prodCode.split("/")[0]}`, {recursive: true});
+        fs.mkdirSync(`${this.appService.productXmlDirectory}/${fundCode}/${prodCode.split("/")[0]}`, {recursive: true});
 
         // Create an uncompressed product xml file
         if (this.appService.writeUncompressedProductXml)
