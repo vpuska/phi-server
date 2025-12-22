@@ -221,6 +221,6 @@ export class PhiDataService {
     async cache() {
         const funds = (await this.fundsService.findAll() as Fund[]).map(fund=>fund.code);
         await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
-        await this.productCacheService.cacheProductSearchQueries(this.productsService.list.bind(this.productsService))
+        await this.productCacheService.cacheProductSegmentQueries(this.productsService.findByMarketSegment.bind(this.productsService))
     }
 }

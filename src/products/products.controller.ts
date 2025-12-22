@@ -80,10 +80,10 @@ export class ProductsController {
      * @param state State
      * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
      */
-    @Get('search/:state/:cover')
+    @Get('segment/:state/:cover')
     @ApiOperation({
-        summary: 'Return a list OPEN products matching search criteria',
-        description: 'Return a list OPEN products matching search criteria: state and cover',
+        summary: 'Return a list OPEN products for a market segment (state and persons covered)',
+        description: 'Return a list OPEN products for a market segment (state and persons covered)',
     })
     @ApiParam({
         name: 'state',
@@ -104,7 +104,7 @@ export class ProductsController {
         if (!["1", "2", "0D", "1D", "2D"].includes(cover)) {
             throw new HttpException(`Invalid Cover Code - ${cover}`, HttpStatus.BAD_REQUEST);
         }
-        return this.productService.list(
+        return this.productService.findByMarketSegment(
             state,
             +cover[0] as 0 | 1 | 2,
             cover[1] === 'D',

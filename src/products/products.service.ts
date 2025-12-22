@@ -62,15 +62,12 @@ export class ProductsService {
     }
 
     /**
-     * List OPEN, non-Corporate products table extracting matching policies for state/type/adults/dependants.
+     * List OPEN products extracting matching policies for state/adults/dependants.
      * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
      * @param adultsCovered `0 | 1 | 2`
      * @param dependantCover  Whether dependant cover required
      */
-    async list(
-        state: string,
-        adultsCovered: 0 | 1 | 2,
-        dependantCover: boolean,
+    async findByMarketSegment(state: string, adultsCovered: 0 | 1 | 2, dependantCover: boolean,
     ) {
         const timeStamp = await this.systemService.findOne("TIMESTAMP", "");
 

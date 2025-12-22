@@ -41,13 +41,13 @@ export class CacheService {
      /**
      * Read cache file.  Returns the uncompressed version if available, otherwise uncompresses and returns the compressed file.
      */
-    async readCache(name: string) : Promise<Buffer<ArrayBuffer>> {
+    async readCache(name: string) : Promise<string> {
         const fileName = `${this.cacheDirectory}/${name}`;
 
         if (fs.existsSync(fileName))
-            return fs.readFileSync(fileName);
+            return fs.readFileSync(fileName).toString();
         else
-            return await gunzip(fs.readFileSync(`${fileName}.gz`))
+            return (await gunzip(fs.readFileSync(`${fileName}.gz`))).toString();
     }
 
 }

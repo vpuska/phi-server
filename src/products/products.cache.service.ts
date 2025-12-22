@@ -53,27 +53,19 @@ export class ProductsCacheService {
         }
     }
 
-    async cacheProductSearchQueries(queryFunction: (state: string, adultsCovered: 0 | 1 | 2, dependants: boolean) => any) {
-        const states = [ "NSW", "VIC", "QLD", "TAS", "SA", "WA", "NT" ]
-        const covers = [ { adults: 0, dependants: true },
-                         { adults: 1, dependants: false },
-                         { adults: 1, dependants: true },
-                         { adults: 2, dependants: false },
-                         { adults: 2, dependants: true }, ]
-
+    async cacheProductSegmentQueries(queryFunction: (state: string, adultsCovered: 0 | 1 | 2, dependants: boolean) => any) {
         this.logger.log(`PRODUCT_SEARCH_CACHE=${this.productSearchCacheMode}`);
 
-        if (this.productSearchCacheMode === "none")
-            return;
+        if (this.productSearchCacheMode !== "none")
+            for (const state of [ "NSW", "VIC", "QLD", "TAS", "SA", "WA", "NT" ])
+                for (const adults of [0, 1, 2])
+                    for (const dependants of [true, false])
+                        if (adults > 0 || dependants)
+                            this.cacheService.writeCache(
+                                `products/segment/${state}/${adults}${dependants ? "D" : ""}`,
+                                this.productSearchCacheMode,
+                                JSON.stringify(await queryFunction(state, adults as 0|1|2, dependants))
+                            )
 
-        for (const state of states) {
-            for (const cover of covers) {
-                this.cacheService.writeCache(
-                    `products/search/${state}/${cover.adults}${cover.dependants?"D":""}`,
-                    this.productSearchCacheMode,
-                    JSON.stringify(await queryFunction(state, cover.adults as 0|1|2, cover.dependants))
-                )
-            }
-        }
     }
 }
