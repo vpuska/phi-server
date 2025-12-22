@@ -2,7 +2,7 @@
  * phi-load/phi-load.service.ts
  * ----------------
  * Here we load the dataset provided by the Australian Private Health Insurance Ombudsman (PHIO).  Data is provided
- * in a ```zip``` file streamed through {@link JSZip} and {@link xtreamer}.
+ * in a `zip` file streamed through {@link JSZip} and {@link xtreamer}.
  *
  * Further information:
  *
@@ -16,34 +16,44 @@
  */
 import JSZip = require('jszip');
 import xtreamer = require("xtreamer");
-import {FundsService} from "../funds/funds.service";
-import {ProductsService} from "../products/products.service";
-
 import {pipeline} from 'node:stream/promises';
+
 import {Injectable} from '@nestjs/common';
 import {Logger} from "@nestjs/common"
-import { AppService } from '../app.service';
+
+import {Fund} from '../funds/entities/fund.entity';
+import {ProductsLoadService} from '../products/products.load.service';
+import {FundsService} from "../funds/funds.service";
+import {ProductsService} from "../products/products.service";
+import {ProductsCacheService} from '../products/products.cache.service';
+import { SystemService } from '../system/system.service';
+
 
 // Link to PHIO datasets hosted on data.gov.au
 const URL = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
 
+
 /**
- * <b>PhiLoadService</b> class.  Handles the load of PHIO data.  See {@link PhiLoadService.run}
+ * <b>PhiDataService</b> class.  Handles the load of PHIO data.  See {@link PhiDataService.run}
  */
 @Injectable()
-export class PhiLoadService {
+export class PhiDataService {
 
     logger = new Logger("PHI Load");
 
     constructor(
         private readonly fundsService: FundsService,
         private readonly productsService: ProductsService,
+        private readonly productCacheService: ProductsCacheService,
+        private readonly productLoadService: ProductsLoadService,
+        private readonly systemService: SystemService,
     ){}
+
     /**
      * Streams data from a ```zip``` file to {@link xtreamer} extracting the requested tag (```<Fund>```
      * or ```<Product>```) from the file and passed to the load function
      *
-     * Called by {@link PhiLoadService.run}.
+     * Called by {@link PhiDataService.run}.
      *
      * @param zip {@link JSZip} instance
      * @param filename File name in the zip to process
@@ -54,30 +64,20 @@ export class PhiLoadService {
     private async unzip(zip: JSZip, filename: string, tag: string, callback: Function) {
         const xt = xtreamer(tag);
         let count = 0;
-        let startTime = new Date().getTime();
-        xt.on("data",(data) => {
+        xt.on("data", (data: any) => {
             callback(data);
-            count++;
-            if (new Date().getTime() - startTime > 30000) {
-                this.logger.log(`Processing '${filename}', loaded ${count} <${tag}> elements so far.`);
-                startTime = new Date().getTime();
-            }
+            if (++count % 2500 ===0)
+                this.logger.log(`Processing '${filename}', loaded ${count} ${tag} elements so far.`);
         });
         // stream zip file to xtreamer..
         await pipeline(zip.file(filename).nodeStream(), xt);
-        this.logger.log(`Processed '${filename}' - read ${count} <${tag}> elements`);
+        this.logger.log(`Processed '${filename}', loaded ${count} ${tag} elements`);
     }
+
     /**
-     * Run the load process.
+     * Create ancillary table data
      */
-    async run() {
-
-        this.logger.log(`Started.`);
-
-        // clear the 'touch' flag
-        this.logger.log("Clearing 'isPreset' flag on product records");
-        await this.productsService.clearIsPresentFlag();
-
+    async initAncillaryTables() {
         // load hospital tiers
         await this.productsService.createHospitalTier("Basic", 100);
         await this.productsService.createHospitalTier("BasicPlus", 150);
@@ -154,6 +154,19 @@ export class PhiLoadService {
         await this.productsService.createHealthService('SPS','H', 'Gold',   'SleepStudies');
         await this.productsService.createHealthService('TON','H', 'Bronze', 'TonsilsAdenoidsGrommets', 'Tonsils, Adenoids & Grommets');
         await this.productsService.createHealthService('WEI','H', 'Gold',   'WeightLossSurgery');
+    }
+
+    /**
+     * Run the load process.
+     */
+    async run() {
+        this.logger.log(`Started.`);
+
+        const timeStamp = new Date();
+        this.logger.log(`Time stamp=${timeStamp.toString()}`);
+
+        // load hospital tiers and service definitions
+        await this.initAncillaryTables();
 
         // fetch the data package description file (JSON) from data.gov.au;
         let response = await fetch(URL);
@@ -167,6 +180,8 @@ export class PhiLoadService {
         // Index 0 is the latest version and the one we fetch
         const resource = package_description['result']['resources'][0];
         this.logger.log("Latest data version = " + resource['description']);
+        await this.systemService.save("DATASET", resource['description'], timeStamp.toString());
+
         response = await fetch(resource['url']);
         if (!response.ok) {
             this.logger.error("Error fetching data resource from from data.gov.au:" + response.statusText);
@@ -190,13 +205,22 @@ export class PhiLoadService {
 
         // Process each of the files we are interested in.
         await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });
-        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productsService.createFromXML(xml) });
-        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productsService.createFromXML(xml) });
-        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productsService.createFromXML(xml) });
+        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, timeStamp) });
+        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, timeStamp) });
+        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, timeStamp) });
 
-        this.logger.log("Flagging orphaned product records.");
-        await this.productsService.decommissionOrphans();
-        this.logger.log("Complete");
+        await this.systemService.save("TIMESTAMP", "", timeStamp.toString());
+        this.logger.log("Load Complete");
+
+        await this.cache();
     }
 
+    /**
+     * Run the cache process.
+     */
+    async cache() {
+        const funds = (await this.fundsService.findAll() as Fund[]).map(fund=>fund.code);
+        await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
+        await this.productCacheService.cacheProductSearchQueries(this.productsService.list.bind(this.productsService))
+    }
 }

@@ -18,11 +18,11 @@ export class ProductsController {
 
     /**
      * Retrieve the XML data for a single product.  Code is split into 2 fields because the
-     * product code includes the `/` character.  Eg `I119/WNDI2D`
+     * product code includes the `/` character.  EG `I119/WNDI2D`
      *
-     * @param fundCode - The fund for this product.  Eg. HIF
-     * @param code1 - 1st part of product code.  Eg ```I119```
-     * @param code2 - Snd part of product code.  Eg. ```WND12D```
+     * @param fundCode - The fund for this product.  EG. HIF
+     * @param code1 - 1st part of product code.  EG ```I119```
+     * @param code2 - Snd part of product code.  EG ```WND12D```
      */
     @Get('xml/:fundCode/:code1/:code2')
     @Header('content-type', 'application/xml')
@@ -78,24 +78,17 @@ export class ProductsController {
     /**
      * Return a list of matching OPEN products by state/type/adults/dependants.
      * @param state State
-     * @param type `Hospital | GeneralHealth | Combined`
      * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
      */
-    @Get('search/:state/:type/:cover')
+    @Get('search/:state/:cover')
     @ApiOperation({
         summary: 'Return a list OPEN products matching search criteria',
-        description: 'Return a list OPEN products matching search criteria: state, type and cover',
+        description: 'Return a list OPEN products matching search criteria: state and cover',
     })
     @ApiParam({
         name: 'state',
         description: 'State of residence.',
         example: 'NSW',
-        required: true,
-    })
-    @ApiParam({
-        name: 'type',
-        description: '`Hospital | GeneralHealth | Combined` - Policy type',
-        example: 'Hospital',
         required: true,
     })
     @ApiParam({
@@ -106,18 +99,13 @@ export class ProductsController {
     })
     list(
         @Param('state') state: string,
-        @Param('type') type: string,
         @Param('cover') cover: string,
     ) {
-        if (!["Hospital", "GeneralHealth", "Combined"].includes(type)) {
-            throw new HttpException(`Invalid cover type - ${type}`, HttpStatus.BAD_REQUEST);
-        }
         if (!["1", "2", "0D", "1D", "2D"].includes(cover)) {
             throw new HttpException(`Invalid Cover Code - ${cover}`, HttpStatus.BAD_REQUEST);
         }
         return this.productService.list(
             state,
-            type,
             +cover[0] as 0 | 1 | 2,
             cover[1] === 'D',
         );

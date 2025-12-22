@@ -15,10 +15,12 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { FundsModule } from './funds/funds.module';
-import { PhiLoadService } from './phi-load/phi-load.service';
-import { ProductsModule } from './products/products.module';
-import { PhiLoadModule } from './phi-load/phi-load.module';
+import { FundsModule } from '../funds/funds.module';
+import { PhiDataService } from '../phidata/phidata.service';
+import { ProductsModule } from '../products/products.module';
+import { PhiDataModule } from '../phidata/phidata.module';
+import { SystemModule } from '../system/system.module';
+
 
 const logger = new Logger('AppModule');
 
@@ -66,7 +68,8 @@ function typeOrmSettings(): DynamicModule {
         typeOrmSettings(),
         FundsModule,
         ProductsModule,
-        PhiLoadModule,
+        PhiDataModule,
+        SystemModule
     ],
     controllers: [AppController],
     providers: [AppService],
@@ -112,23 +115,22 @@ export class AppModule {
             forbidNonWhitelisted: true
         }));
 
-        const appService = app.get(AppService);
-        logger.log("PRODUCT_XML_DIRECTORY=" + appService.productXmlDirectory);
-        logger.log("PRODUCT_XML_COMPRESSION=" + appService.productXmlCompression);
-
         await app.listen(process.env.PORT ?? 3000);
     }
     /**
      * Run the phi-load command.
      */
-    static async run_phiload() {
+    static async run_phi_data_load() {
         const app = await NestFactory.createApplicationContext(AppModule);
-        logger.log("PRODUCT_XML_DIRECTORY=" + app.get(AppService).productXmlDirectory);
-        logger.log("PRODUCT_XML_COMPRESSION=" + app.get(AppService).productXmlCompression);
-
-        const loader = app.get(PhiLoadService);
+        const loader = app.get(PhiDataService);
         await loader.run();
         process.exit(0);
     }
 
+    static async run_build_cache() {
+        const app = await NestFactory.createApplicationContext(AppModule);
+        const loader = app.get(PhiDataService);
+        await loader.cache();
+        process.exit(0);
+    }
 }

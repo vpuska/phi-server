@@ -14,7 +14,7 @@ import { HospitalTier } from './hospital-tier.entity';
  * in the table.  All other information needs to be extracted from the product XML in the `product.xml`
  * field.
  *
- * @Note The {@link PhiLoadService.run} will set the status to `Orphaned` when a record is dropped from
+ * @Note The {@link PhiDataService.run} will set the status to `Orphaned` when a record is dropped from
  * the downloaded dataset.
  */
 @Entity({name: 'products'})
@@ -113,10 +113,8 @@ export class Product {
     @Column({length:512})
     services: string;
 
-    // This field is used to detect product records that might have been dropped from the
-    // imported dataset - most likely because the product is closed or was created in error.
-    @Column({type:'boolean', default:true})
-    isPresent: boolean;
+    @Column({type:'datetime', default:0})
+    timeStamp: Date;
 
     @ManyToOne(() => HospitalTier, (tier) => tier.tier, {})
     @JoinColumn({name:'hospitalTier'})

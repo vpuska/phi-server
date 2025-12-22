@@ -26,7 +26,9 @@ export class FundsService {
      * @param elements - Optional array of element names
      */
     async findAll(elements : string[] = []) : Promise<Object[]> {
-        const result = await this.fundRepository.find();
+        const result = await this.fundRepository.find({
+            order: {'code': 'asc'}
+        });
         const result2 = [];
         const parser = new DOMParser();
         const serializer = new XMLSerializer();
