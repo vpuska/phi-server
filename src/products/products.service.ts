@@ -4,7 +4,7 @@
  * @author: V. Puska
  * @date: 03-Jan-2025
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';
@@ -49,6 +49,7 @@ const LIST_FIELDS = [
 @Injectable()
 export class ProductsService {
 
+
     constructor(
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>,
@@ -61,6 +62,9 @@ export class ProductsService {
     ) {
     }
 
+    private readonly debug = (process.env.DEBUG === 'true' || process.env.DEBUG === 'products');
+    private readonly logger = new Logger('ProductsService');
+
     /**
      * List OPEN products extracting matching policies for state/adults/dependants.
      * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
@@ -69,6 +73,9 @@ export class ProductsService {
      */
     async findByMarketSegment(state: string, adultsCovered: 0 | 1 | 2, dependantCover: boolean,
     ) {
+        if (this.debug)
+            this.logger.debug(`findByMarketSegment(${state}, ${adultsCovered}, ${dependantCover})`);
+
         const timeStamp = await this.systemService.findOne("TIMESTAMP", "");
 
         const filter = {
@@ -96,6 +103,9 @@ export class ProductsService {
      * @param fundCode
      */
     async findByFund(fundCode: string) {
+        if (this.debug)
+            this.logger.debug(`findByFund(${fundCode})`);
+
         const timeStamp = await this.systemService.findOne("TIMESTAMP", "");
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
@@ -113,6 +123,9 @@ export class ProductsService {
      * @param productCode Product code.
      */
     async getXml(fundCode: string, productCode: string) {
+        if (this.debug)
+            this.logger.debug(`getXml(${fundCode}, ${productCode})`);
+
         return await this.productCacheService.readProductXmlCache(fundCode, productCode);
     }
 
