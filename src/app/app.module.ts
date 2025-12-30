@@ -11,7 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from "@nestjs/config";
 import * as process from "node:process";
 
-import { NestFactory } from '@nestjs/core';
+import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import { CommandFactory } from 'nest-commander';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
@@ -22,6 +22,7 @@ import { FundsModule } from '../funds/funds.module';
 import { ProductsModule } from '../products/products.module';
 import { ImportModule } from '../import/import.module';
 import { SystemModule } from '../system/system.module';
+import { AppLoggingInterceptor } from './app.logging.interceptor';
 
 
 /**
@@ -70,7 +71,7 @@ function typeOrmSettings(): DynamicModule {
         SystemModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, {provide: APP_INTERCEPTOR, useClass: AppLoggingInterceptor} ],
     exports: [AppService],
 })
 export class AppModule {

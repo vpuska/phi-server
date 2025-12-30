@@ -20,7 +20,7 @@ export class ProductsLoadService {
 
     /**
      * Create a {@Link Product} from XML data and save to the database.
-     * Used by {@link PhiDataService.run}.
+     * Used by {@link ImportService.run}.
      * @param xml Product XML
      * @param timeStamp
      */

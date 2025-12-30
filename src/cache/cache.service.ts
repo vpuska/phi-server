@@ -9,6 +9,7 @@ import * as zlib from 'node:zlib';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 import { Injectable } from '@nestjs/common';
+import EventEmitter from 'node:events';
 
 export type CacheMode = "compressed" | "uncompressed" | "both" | "none";
 
@@ -30,7 +31,7 @@ export class CacheService {
      * @param data Text data to cache
      * @example writeCache('products/xml/I2/AZAA1D',"uncompressed",data)
      */
-    writeCache(name: string, cacheMode: CacheMode, data: string) {
+    writeCache(name: string, cacheMode: CacheMode, data: string | NodeJS.ReadableStream) {
         if (cacheMode === 'none')
             return;
 
@@ -40,11 +41,29 @@ export class CacheService {
         if (!fs.existsSync(dir))
             fs.mkdirSync(dir, { recursive: true });
 
-        if (cacheMode === 'uncompressed' || cacheMode === 'both')
-            fs.writeFileSync(fileName, data);
+        if (data instanceof Object && 'pipe' in data) {
 
-        if (cacheMode === 'compressed' || cacheMode === 'both') {
-            fs.writeFileSync(`${fileName}.gz`, zlib.gzipSync(data));
+            const stream = data as NodeJS.ReadableStream;
+
+            if (cacheMode === 'uncompressed' || cacheMode === 'both') {
+                const writeStream = fs.createWriteStream(fileName);
+                stream.pipe(writeStream);
+            }
+
+            if (cacheMode === 'compressed' || cacheMode === 'both') {
+                const gzipStream = zlib.createGzip();
+                const writeStream = fs.createWriteStream(`${fileName}.gz`);
+                stream.pipe(gzipStream).pipe(writeStream);
+            }
+
+        } else {
+
+            if (cacheMode === 'uncompressed' || cacheMode === 'both')
+                fs.writeFileSync(fileName, data as string);
+
+            if (cacheMode === 'compressed' || cacheMode === 'both')
+                fs.writeFileSync(`${fileName}.gz`, zlib.gzipSync(data as string));
+
         }
     }
 

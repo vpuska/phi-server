@@ -22,11 +22,12 @@ import {Injectable} from '@nestjs/common';
 import {Logger} from "@nestjs/common"
 
 import {Fund} from '../funds/entities/fund.entity';
-import {ProductsLoadService} from '../products/products.load.service';
 import {FundsService} from "../funds/funds.service";
 import {ProductsService} from "../products/products.service";
 import {ProductsCacheService} from '../products/products.cache.service';
 import { SystemService } from '../system/system.service';
+import { CacheMode, CacheService } from '../cache/cache.service';
+import { ProductsLoadService } from '../products/products.load.service';
 
 
 // Link to PHIO datasets hosted on data.gov.au
@@ -44,9 +45,10 @@ export class ImportService {
     constructor(
         private readonly fundsService: FundsService,
         private readonly productsService: ProductsService,
-        private readonly productCacheService: ProductsCacheService,
         private readonly productLoadService: ProductsLoadService,
+        private readonly productCacheService: ProductsCacheService,
         private readonly systemService: SystemService,
+        private readonly cacheService: CacheService,
     ){}
 
     /**
@@ -77,10 +79,8 @@ export class ImportService {
 
     /**
      * Create ancillary table data:
-     * <ul>
-     *    <li>Hospital Tiers table</li>
-     *    <li>General Health and Hospital Services Table</li>
-     * </ul>
+     * - Hospital Tiers table
+     * - General Health and Hospital Services Table
      */
     async initAncillaryTables() {
         // load hospital tiers
@@ -212,6 +212,12 @@ export class ImportService {
                 files.push(zipEntry.name);
             }
         });
+
+        let fundCompressMode = (process.env["FUND_XML_CACHE"] || "compressed") as CacheMode;
+        if (! ["compressed", "uncompressed", "both"].includes(fundCompressMode))
+            fundCompressMode = "compressed";
+        this.logger.log("FUND_XML_CACHE = " + fundCompressMode);
+        this.cacheService.writeCache("funds/xml", fundCompressMode, zip.files[files[0]].nodeStream())
 
         // Process each of the files we are interested in.
         await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });

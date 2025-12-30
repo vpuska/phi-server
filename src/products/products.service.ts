@@ -4,7 +4,7 @@
  * @author: V. Puska
  * @date: 03-Jan-2025
  */
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';
@@ -62,9 +62,6 @@ export class ProductsService {
     ) {
     }
 
-    private readonly debug = (process.env.DEBUG === 'true' || process.env.DEBUG === 'products');
-    private readonly logger = new Logger('ProductsService');
-
     /**
      * List OPEN products extracting matching policies for state/adults/dependants.
      * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
@@ -73,9 +70,6 @@ export class ProductsService {
      */
     async findByMarketSegment(state: string, adultsCovered: 0 | 1 | 2, dependantCover: boolean,
     ) {
-        if (this.debug)
-            this.logger.debug(`findByMarketSegment(${state}, ${adultsCovered}, ${dependantCover})`);
-
         const timeStamp = new Date(await this.systemService.get("IMPORT", "TIMESTAMP", new Date(0).toString()));
 
         const filter = {
@@ -103,9 +97,6 @@ export class ProductsService {
      * @param fundCode
      */
     async findByFund(fundCode: string) {
-        if (this.debug)
-            this.logger.debug(`findByFund(${fundCode})`);
-
         const timeStamp = new Date(await this.systemService.get("IMPORT", "TIMESTAMP", new Date(0).toString()));
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
@@ -123,9 +114,6 @@ export class ProductsService {
      * @param productCode Product code.
      */
     async getXml(fundCode: string, productCode: string) {
-        if (this.debug)
-            this.logger.debug(`getXml(${fundCode}, ${productCode})`);
-
         return await this.productCacheService.readProductXmlCache(fundCode, productCode);
     }
 

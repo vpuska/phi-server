@@ -3,14 +3,18 @@
  * ---
  * @author V. Puska
  */
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { FundsService } from './funds.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiSchema } from '@nestjs/swagger';
+import { CacheService } from '../cache/cache.service';
 
 
 @Controller('funds')
 export class FundsController {
-    constructor(private readonly fundsService: FundsService) {}
+    constructor(
+        private readonly fundsService: FundsService,
+        private readonly cacheService: CacheService
+    ) {}
 
     /**
      * Returns all fund records.
@@ -44,7 +48,7 @@ export class FundsController {
      * @example /funds/BUP
      * @param code - fund code
      */
-    @Get(':code')
+    @Get('get/:code')
     @ApiOperation({
         summary: 'Return a single fund record.',
         description: `Return a single **fund** record`
@@ -59,4 +63,13 @@ export class FundsController {
         return this.fundsService.findOne(code.toUpperCase());
     }
 
+    @Get("xml")
+    @Header('content-type', 'application/xml')
+    @ApiOperation({
+        summary: 'Returns all fund details in XML format.',
+        description: 'Returns the XML fund package downloaded from data.gov.au.'
+    })
+    async findXML() {
+        return await this.cacheService.readCache("funds/xml")
+    }
 }
