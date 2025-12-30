@@ -1,13 +1,23 @@
-import { Injectable } from '@nestjs/common';
+/**
+ * cache/cache.service.ts
+ * ---
+ * @author: V.Puska
+ * @Date: 29-Dec-2025
+ */
 import * as fs from 'node:fs';
 import * as zlib from 'node:zlib';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
+import { Injectable } from '@nestjs/common';
 
 export type CacheMode = "compressed" | "uncompressed" | "both" | "none";
 
 const gunzip = promisify(zlib.gunzip)
 
+/**
+ * Provides a `read` and `write` cache service.  The cache directory is taken from the environment variable and defaults to `cache`.
+ * @example CACHE_DIR=/usr/phealth/cache
+ */
 @Injectable()
 export class CacheService {
 
@@ -16,9 +26,9 @@ export class CacheService {
     /**
      * Cache data to a file.  Required directories will be created if they do not exist.
      * @param name Name of the cache file to write.
-     * @param cacheMode
-     * @param data
-     * @example writeCache('products/xml/I2/AZAA1D', data)
+     * @param cacheMode "compressed" | "uncompressed" | "both" | "none"
+     * @param data Text data to cache
+     * @example writeCache('products/xml/I2/AZAA1D',"uncompressed",data)
      */
     writeCache(name: string, cacheMode: CacheMode, data: string) {
         if (cacheMode === 'none')
@@ -40,6 +50,7 @@ export class CacheService {
 
      /**
      * Read cache file.  Returns the uncompressed version if available, otherwise uncompresses and returns the compressed file.
+     * @example readCache('products/xml/I2/AZAA1D')
      */
     async readCache(name: string) : Promise<string> {
         const fileName = `${this.cacheDirectory}/${name}`;

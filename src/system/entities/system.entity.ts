@@ -15,7 +15,7 @@ export class System {
     @PrimaryColumn({length:64})
     key1: string;
 
-    @PrimaryColumn({length:64})
+    @PrimaryColumn({length:256, default: ""})
     key2: string;
 
     @Column({length:256})

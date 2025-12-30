@@ -1,28 +1,28 @@
 /**
- * app.module.ts
+ * app/app.module.ts
  * ------------
  * The main module file for the application.
  * @author V.Puska
  * @date 01-Nov-24
  *
  */
-import { DynamicModule, Logger, Module, ValidationPipe } from '@nestjs/common';
+import { DynamicModule, Module, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from "@nestjs/config";
 import * as process from "node:process";
+
 import { NestFactory } from '@nestjs/core';
+import { CommandFactory } from 'nest-commander';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
 import { FundsModule } from '../funds/funds.module';
-import { PhiDataService } from '../phidata/phidata.service';
 import { ProductsModule } from '../products/products.module';
-import { PhiDataModule } from '../phidata/phidata.module';
+import { ImportModule } from '../import/import.module';
 import { SystemModule } from '../system/system.module';
 
-
-const logger = new Logger('AppModule');
 
 /**
  * Factory function to create the `TypeOrmModule` for the application.
@@ -32,7 +32,6 @@ function typeOrmSettings(): DynamicModule {
     const type: string = process.env.DATABASE || "SQLITE";
 
     if (type==='MARIADB') {
-        logger.log('Using MARIADB');
         return TypeOrmModule.forRoot({
             type: 'mariadb',
             host: process.env["MARIADB_HOST"] || 'localhost',
@@ -47,7 +46,6 @@ function typeOrmSettings(): DynamicModule {
 
     if (type==='SQLITE') {
         const dbname = process.env['DATABASE_NAME'] || "database.sqlite3"
-        logger.log('SQLITE DB=' + dbname);
         return TypeOrmModule.forRoot({
             type: 'better-sqlite3',
             database: dbname,
@@ -68,8 +66,8 @@ function typeOrmSettings(): DynamicModule {
         typeOrmSettings(),
         FundsModule,
         ProductsModule,
-        PhiDataModule,
-        SystemModule
+        ImportModule,
+        SystemModule,
     ],
     controllers: [AppController],
     providers: [AppService],
@@ -118,19 +116,9 @@ export class AppModule {
         await app.listen(process.env.PORT ?? 3000);
     }
     /**
-     * Run the phi-load command.
+     * Run the command factory.
      */
-    static async run_phi_data_load() {
-        const app = await NestFactory.createApplicationContext(AppModule);
-        const loader = app.get(PhiDataService);
-        await loader.run();
-        process.exit(0);
-    }
-
-    static async run_build_cache() {
-        const app = await NestFactory.createApplicationContext(AppModule);
-        const loader = app.get(PhiDataService);
-        await loader.cache();
-        process.exit(0);
+    static async run_commander() {
+        await CommandFactory.run(AppModule, ["error", "warn", "fatal"])
     }
 }

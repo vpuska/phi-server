@@ -1,5 +1,5 @@
 /**
- * phi-load/phi-load.service.ts
+ * import/import.service.ts
  * ----------------
  * Here we load the dataset provided by the Australian Private Health Insurance Ombudsman (PHIO).  Data is provided
  * in a `zip` file streamed through {@link JSZip} and {@link xtreamer}.
@@ -12,7 +12,7 @@
  *
  * - PHI Datasets (data.gov.au)
  *
- *   https://data.gov.au/dataset/ds-dga-8ab10b1f-6eac-423c-abc5-bbffc31b216c/details?q=private%20health%20insurance
+ *   https://data.gov.au/data/dataset/private-health-insurance
  */
 import JSZip = require('jszip');
 import xtreamer = require("xtreamer");
@@ -34,12 +34,12 @@ const URL = "https://data.gov.au/api/3/action/package_show?id=private-health-ins
 
 
 /**
- * <b>PhiDataService</b> class.  Handles the load of PHIO data.  See {@link PhiDataService.run}
+ * <b>ImportService</b> class.  Handles the import of PHIO data from data.gov.au.  See {@link ImportService.run}
  */
 @Injectable()
-export class PhiDataService {
+export class ImportService {
 
-    logger = new Logger("PHI Load");
+    logger = new Logger("ImportService");
 
     constructor(
         private readonly fundsService: FundsService,
@@ -53,29 +53,34 @@ export class PhiDataService {
      * Streams data from a ```zip``` file to {@link xtreamer} extracting the requested tag (```<Fund>```
      * or ```<Product>```) from the file and passed to the load function
      *
-     * Called by {@link PhiDataService.run}.
+     * Called by {@link ImportService.run}.
      *
      * @param zip {@link JSZip} instance
      * @param filename File name in the zip to process
      * @param tag Tag to process
-     * @param callback Callback function to load the data
+     * @param callback Callback function to load the data for the tag
      * @private
      */
-    private async unzip(zip: JSZip, filename: string, tag: string, callback: Function) {
+    private async unzip(zip: JSZip, filename: string, tag: "Fund" | "Product", callback: Function) {
         const xt = xtreamer(tag);
         let count = 0;
+        // streaming handler for each product or fund (tag) record
         xt.on("data", (data: any) => {
             callback(data);
             if (++count % 2500 ===0)
-                this.logger.log(`Processing '${filename}', loaded ${count} ${tag} elements so far.`);
+                this.logger.log(`Processing '${filename}', loaded ${count} ${tag} elements.`);
         });
         // stream zip file to xtreamer..
         await pipeline(zip.file(filename).nodeStream(), xt);
-        this.logger.log(`Processed '${filename}', loaded ${count} ${tag} elements`);
+        this.logger.log(`Processed '${filename}', loaded ${count} ${tag} elements.`);
     }
 
     /**
-     * Create ancillary table data
+     * Create ancillary table data:
+     * <ul>
+     *    <li>Hospital Tiers table</li>
+     *    <li>General Health and Hospital Services Table</li>
+     * </ul>
      */
     async initAncillaryTables() {
         // load hospital tiers
@@ -158,16 +163,9 @@ export class PhiDataService {
 
     /**
      * Run the load process.
+     * @param force Forces load of a dataset, ignoring check for prior load
      */
-    async run() {
-        this.logger.log(`Started.`);
-
-        const timeStamp = new Date();
-        this.logger.log(`Time stamp=${timeStamp.toString()}`);
-
-        // load hospital tiers and service definitions
-        await this.initAncillaryTables();
-
+    async run(force: boolean) {
         // fetch the data package description file (JSON) from data.gov.au;
         let response = await fetch(URL);
         if (!response.ok) {
@@ -180,8 +178,20 @@ export class PhiDataService {
         // Index 0 is the latest version and the one we fetch
         const resource = package_description['result']['resources'][0];
         this.logger.log("Latest data version = " + resource['description']);
-        await this.systemService.save("DATASET", resource['description'], timeStamp.toString());
 
+        // Check prior loads to see if this has already been processed
+        const lastRunTime = await this.systemService.get("IMPORT", "LASTRUN", new Date(0).toString());
+        const lastFileLoaded = await this.systemService.get("IMPORT", lastRunTime, "no run found");
+        const thisRunTime = new Date();
+        if (!force && resource["description"] === lastFileLoaded) {
+            this.logger.log("Database is up-to-date. Load process terminated");
+            return;
+        }
+
+        // load hospital tiers and service definitions
+        await this.initAncillaryTables();
+
+        // download the zip file
         response = await fetch(resource['url']);
         if (!response.ok) {
             this.logger.error("Error fetching data resource from from data.gov.au:" + response.statusText);
@@ -205,22 +215,26 @@ export class PhiDataService {
 
         // Process each of the files we are interested in.
         await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });
-        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, timeStamp) });
-        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, timeStamp) });
-        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, timeStamp) });
+        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
+        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
+        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
 
-        await this.systemService.save("TIMESTAMP", "", timeStamp.toString());
-        this.logger.log("Load Complete");
+        // Save the import to system control
+        await this.systemService.save("IMPORT", thisRunTime.toString(), resource['description']);
+        await this.systemService.save("IMPORT", "LASTRUN", thisRunTime.toString());
 
+        // Create cache files..
         await this.cache();
     }
 
     /**
-     * Run the cache process.
+     * Create cache files for product queries.
      */
     async cache() {
+        this.logger.log("Creating products/fund cache...");
         const funds = (await this.fundsService.findAll() as Fund[]).map(fund=>fund.code);
         await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
+        this.logger.log("Creating products/segment cache...");
         await this.productCacheService.cacheProductSegmentQueries(this.productsService.findByMarketSegment.bind(this.productsService))
     }
 }

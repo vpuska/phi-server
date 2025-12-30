@@ -6,6 +6,7 @@ export class ProductsCacheService {
 
     productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE || "none") as CacheMode;
     productFundCacheMode: CacheMode = (process.env.PRODUCT_FUND_CACHE || "none") as CacheMode;
+    //TODO: change to PRODUCT_SEGMENT_CACHE
     productSearchCacheMode: CacheMode = (process.env.PRODUCT_SEARCH_CACHE || "none") as CacheMode;
 
     logger = new Logger('ProductsCacheService');
@@ -55,7 +56,6 @@ export class ProductsCacheService {
 
     async cacheProductSegmentQueries(queryFunction: (state: string, adultsCovered: 0 | 1 | 2, dependants: boolean) => any) {
         this.logger.log(`PRODUCT_SEARCH_CACHE=${this.productSearchCacheMode}`);
-
         if (this.productSearchCacheMode !== "none")
             for (const state of [ "NSW", "VIC", "QLD", "TAS", "SA", "WA", "NT" ])
                 for (const adults of [0, 1, 2])

@@ -15,9 +15,9 @@ export class FundsController {
     /**
      * Returns all fund records.
      * @example Return `FundDependants` and `RelatedBrandNames`
-     * /funds/?elements=FundDependants,RelatedBrandNames
+     * /funds/?tags=FundDependants,RelatedBrandNames
      * @example Return the complete `Fund` element
-     * /funds/?elements=Fund
+     * /funds/?tags=Fund
      * @param tags Optional. Comma-delimited array of XML elements to include in the result.
      */
     @Get()

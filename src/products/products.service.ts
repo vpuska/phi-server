@@ -76,14 +76,14 @@ export class ProductsService {
         if (this.debug)
             this.logger.debug(`findByMarketSegment(${state}, ${adultsCovered}, ${dependantCover})`);
 
-        const timeStamp = await this.systemService.findOne("TIMESTAMP", "");
+        const timeStamp = new Date(await this.systemService.get("IMPORT", "TIMESTAMP", new Date(0).toString()));
 
         const filter = {
             state: In(['ALL', state]),
             adultsCovered: adultsCovered,
             dependantCover: dependantCover,
             status: 'Open',
-            timeStamp: MoreThanOrEqual(new Date(timeStamp.data))
+            timeStamp: MoreThanOrEqual(timeStamp)
         };
 
         return await this.productRepository.find({
@@ -106,13 +106,13 @@ export class ProductsService {
         if (this.debug)
             this.logger.debug(`findByFund(${fundCode})`);
 
-        const timeStamp = await this.systemService.findOne("TIMESTAMP", "");
+        const timeStamp = new Date(await this.systemService.get("IMPORT", "TIMESTAMP", new Date(0).toString()));
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
             where: {
                 fundCode: fundCode,
                 status: 'Open',
-                timeStamp: MoreThanOrEqual(new Date(timeStamp.data))
+                timeStamp: MoreThanOrEqual(timeStamp)
             },
         })
     }
@@ -130,7 +130,7 @@ export class ProductsService {
     }
 
     /**
-     * Add a health service.  Used by {@link PhiDataService.run}
+     * Add a health service.  Used by {@link ImportService.run}
      * @param key 3 character abbreviated mnemonic for the service
      * @param type `H` | `G`
      * @param tier `None` | `Basic` | `Bronze` | `Silver` | `Gold`
@@ -173,7 +173,7 @@ export class ProductsService {
     }
 
     /**
-     * Add a hospital tier ranking.  Used by {@link PhiDataService.run}.
+     * Add a hospital tier ranking.  Used by {@link ImportService.run}.
      * @param tier The PHIO HospitalTier. Eg "SilverPlus"
      * @param ranking Assigned tier ranking.
      */
