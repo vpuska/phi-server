@@ -16,7 +16,4 @@ export class Fund {
 
     @Column({length:16, nullable:true})
     type: string; // Restricted or Open
-
-    @Column({type: "text", nullable:true})
-    xml: string;
 }

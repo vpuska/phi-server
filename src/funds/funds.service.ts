@@ -7,7 +7,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
+import { DOMParser } from '@xmldom/xmldom';
 import { Fund } from "./entities/fund.entity";
 
 /**
@@ -23,26 +23,11 @@ export class FundsService {
 
     /**
      * Return all fund records.
-     * @param elements - Optional array of element names
      */
-    async findAll(elements : string[] = []) : Promise<Object[]> {
-        const result = await this.fundRepository.find({
+    async findAll() : Promise<Object[]> {
+        return await this.fundRepository.find({
             order: {'code': 'asc'}
         });
-        const result2 = [];
-        const parser = new DOMParser();
-        const serializer = new XMLSerializer();
-        for (const fund of result) {
-            const { xml, ...obj } = fund;
-            for (const key of elements) {
-                const doc = parser.parseFromString(xml, 'text/xml')
-                const elems = doc.getElementsByTagName(key);
-                if (elems.length > 0)
-                    obj[key] = serializer.serializeToString(elems[0]);
-            }
-            result2.push(obj);
-        }
-        return result2;
     }
 
     /**
@@ -63,8 +48,6 @@ export class FundsService {
         fund.code = doc.getElementsByTagName("FundCode")[0].textContent;
         fund.name = doc.getElementsByTagName("FundName")[0].textContent;
         fund.type = doc.getElementsByTagName("FundType")[0].textContent;
-        fund.xml = xml.toString()
-
         return await this.fundRepository.save(fund);
     }
 }

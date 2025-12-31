@@ -9,7 +9,7 @@ import { ProductsCacheService } from './products.cache.service';
 @Injectable()
 export class ProductsLoadService {
 
-    logger = new Logger('product/create.service');
+    logger = new Logger(this.constructor.name);
 
     constructor(
         @InjectRepository(Product)
@@ -35,7 +35,7 @@ export class ProductsLoadService {
         const fundCode = prodNode.getElementsByTagName('FundCode')[0].textContent;
 
         if (unicodeErr >= 0)
-            this.logger.warn('Unicode character detected in product ' + prodCode);
+            this.logger.warn(`Unicode character detected in ${fundCode}/${prodCode}`);
 
         this.productsCacheService.writeProductXmlCache(fundCode, prodCode, newXml)
 
