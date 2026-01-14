@@ -28,6 +28,15 @@ export class FundsController {
         return this.fundsService.findAll();
     }
 
+    @Get("brands")
+    @ApiOperation({
+        summary: 'Return all fund brand records.',
+        description: `Return all **fund-brand** records`,
+    })
+    findAllFundBrands() {
+        return this.fundsService.findAllFundBrands();
+    }
+
     @Get("xml")
     @Header('content-type', 'application/xml')
     @ApiOperation({

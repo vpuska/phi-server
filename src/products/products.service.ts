@@ -162,7 +162,7 @@ export class ProductsService {
 
     /**
      * Add a hospital tier ranking.  Used by {@link ImportService.run}.
-     * @param tier The PHIO HospitalTier. Eg "SilverPlus"
+     * @param tier The PHIO HospitalTier. E.g. "SilverPlus"
      * @param ranking Assigned tier ranking.
      */
     async createHospitalTier(tier: string, ranking: number) {

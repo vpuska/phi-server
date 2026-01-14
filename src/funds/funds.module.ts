@@ -8,11 +8,12 @@ import { Module } from '@nestjs/common';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import { FundsService } from './funds.service';
 import { Fund } from "./entities/fund.entity";
+import { FundBrand } from "./entities/fund-brand.entity";
 import { FundsController } from './funds.controller';
 import { CacheModule } from '../cache/cache.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Fund]), CacheModule],
+    imports: [TypeOrmModule.forFeature([Fund, FundBrand]), CacheModule],
     exports: [TypeOrmModule, FundsService],
     providers: [FundsService],
     controllers: [FundsController],

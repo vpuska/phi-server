@@ -213,6 +213,7 @@ export class ImportService {
             }
         });
 
+        // Write the funds xml file to the cache
         let fundCompressMode = (process.env["FUND_XML_CACHE"] || "compressed") as CacheMode;
         if (! ["compressed", "uncompressed", "both"].includes(fundCompressMode))
             fundCompressMode = "compressed";
