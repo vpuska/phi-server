@@ -8,7 +8,7 @@ import { Command, CommandRunner, Option } from 'nest-commander';
 import { ImportService } from './import.service';
 import { SystemService } from '../system/system.service';
 import { Logger } from '@nestjs/common';
-import { Not } from 'typeorm';
+import { And, Not } from 'typeorm';
 
 // Terminal/console color control codes
 const colors = {
@@ -65,27 +65,20 @@ export class ImportCommand extends CommandRunner {
      * @param showHistory
      */
     async displayStatus(showStatus: boolean, showHistory: boolean): Promise<void> {
+        const lastCheck = await this.systemService.get("IMPORT", "LASTCHECK", "none");
         const lastRun = await this.systemService.get("IMPORT", "LASTRUN", "none");
-        if (lastRun === "none") {
-            console.log(colors.red, "No import history on file. Missing IMPORT/LASTRUN record", colors.reset)
-            return
-        }
-
         const lastFile = await this.systemService.get("IMPORT", lastRun, "none");
-        if (lastFile === "none") {
-            console.log(colors.red, "No import history found. Missing IMPORT record", colors.reset);
-            return;
-        }
 
         if (showStatus) {
-            console.log("Database updated at", colors.magenta, lastRun, colors.reset);
             console.log("Current imported dataset:", colors.magenta, lastFile, colors.reset);
+            console.log("       Last import check:", colors.magenta, lastCheck, colors.reset);
+            console.log("     Database updated at:", colors.magenta, lastRun, colors.reset);
         }
 
         if (showHistory) {
             const importHistory = await this.systemService.findAll({
                 key1: "IMPORT",
-                key2: Not("LASTRUN")
+                key2: And(Not("LASTRUN"), Not("LASTCHECK")),
             })
             console.log("History:")
             importHistory.sort((a,b) => {

@@ -183,6 +183,8 @@ export class ImportService {
         const lastRunTime = await this.systemService.get("IMPORT", "LASTRUN", new Date(0).toString());
         const lastFileLoaded = await this.systemService.get("IMPORT", lastRunTime, "no run found");
         const thisRunTime = new Date();
+        await this.systemService.save("IMPORT", "LASTCHECK", thisRunTime.toString());
+
         if (!force && resource["description"] === lastFileLoaded) {
             this.logger.log("Database is up-to-date. Load process terminated");
             return;
@@ -208,7 +210,10 @@ export class ImportService {
                 files[0] = zipEntry.name;
             if (zipEntry.name.startsWith("Combined Open ") ||
                 zipEntry.name.startsWith("GeneralHealth Open ") ||
-                zipEntry.name.startsWith("Hospital Open")) {
+                zipEntry.name.startsWith("Hospital Open") ||
+                zipEntry.name.startsWith("Combined Closed ") ||
+                zipEntry.name.startsWith("GeneralHealth Closed ") ||
+                zipEntry.name.startsWith("Hospital Closed")) {
                 files.push(zipEntry.name);
             }
         });
@@ -222,9 +227,8 @@ export class ImportService {
 
         // Process each of the files we are interested in.
         await this.unzip(zip, files[0], "Fund", (xml:any) => { this.fundsService.createFromXML(xml) });
-        await this.unzip(zip, files[1], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
-        await this.unzip(zip, files[2], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
-        await this.unzip(zip, files[3], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
+        for (let i = 1; i < files.length; i++)
+            await this.unzip(zip, files[i], "Product", (xml:any) => { this.productLoadService.createFromXML(xml, thisRunTime) });
 
         // Save the import to system control
         await this.systemService.save("IMPORT", thisRunTime.toString(), resource['description']);
