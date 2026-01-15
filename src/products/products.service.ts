@@ -49,7 +49,6 @@ const LIST_FIELDS = [
 @Injectable()
 export class ProductsService {
 
-
     constructor(
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>,
@@ -106,6 +105,21 @@ export class ProductsService {
                 timeStamp: MoreThanOrEqual(timeStamp)
             },
         })
+    }
+
+    /**
+     * Return all product titles
+     */
+    async getProductTitles() {
+        return await this.productRepository
+            .createQueryBuilder()
+            .distinct(true)
+            .select(['fundCode', 'name', 'brands'])
+            .orderBy({
+                'name': 'ASC',
+                'fundCode': 'ASC',
+            })
+            .getRawMany();
     }
 
     /**

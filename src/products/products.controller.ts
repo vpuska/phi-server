@@ -61,6 +61,15 @@ export class ProductsController {
             throw new NotFoundException(`Product ${code1}/${code2} found.`);
     }
 
+    @Get('titles')
+    @ApiOperation({
+        summary: 'Return a list of distinct product titles.',
+        description: 'Return a list of distinct product titles.',
+    })
+    titleList() {
+        return this.productService.getProductTitles()
+    }
+
     /**
      * Return a list of hospital and general services
      */
