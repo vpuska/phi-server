@@ -25,14 +25,37 @@ import { ImportModule } from '../import/import.module';
 import { SystemModule } from '../system/system.module';
 import { AppLoggingInterceptor } from './app.logging.interceptor';
 
+// API description text for Swagger documentation.
+const API_DESCRIPTION = `
+<p>
+    This is a demonstration/sample API server built with <a target='_blank' href='https://nestjs.com/'>NestJS</a>.
+</p>
+<p>
+    The API serves information about <b>Australian private health insurance</b> funds and products. <em>Its only purpose is
+    as a platform to provide a non-trivial dataset for personal research, investigation and
+    education into web application development technologies</em>.
+</p>
+<p>
+    To allow for easier comparison of health insurance products, all Australian health insurers
+    are required by law to create a Private Health Information Statement for each of their products.
+    These statements are collated by the **Australian Private Health Insurance Ombudsman** (PHIO) and published on
+    <a target='_blank' href='https://data.gov.au/dataset/ds-dga-8ab10b1f-6eac-423c-abc5-bbffc31b216c/details?q=PHIO'>data.gov.au</a>.
+    Further information about PHIO can be found at <a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a>
+</p>
+<p>
+    This site and application has no connection to the Australian Private Health Insurance Ombudsman, and is purely a personal, 
+    non-commercial, non-official project.  Data provided by this API is not to be relied upon for any comparison of, or research into, 
+    private health insurance products.  Please use <a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a>
+    or one of the commercial product comparison services.
+</p>
+`
+
 
 /**
  * Factory function to create the `TypeOrmModule` for the application.
  */
 function typeOrmSettings(): DynamicModule {
-
     const type: string = process.env.DATABASE || "SQLITE";
-
     if (type==='MARIADB') {
         return TypeOrmModule.forRoot({
             type: 'mariadb',
@@ -45,7 +68,6 @@ function typeOrmSettings(): DynamicModule {
             synchronize: true,
         })
     }
-
     if (type==='SQLITE') {
         const dbname = process.env['DATABASE_NAME'] || "database.sqlite3"
         return TypeOrmModule.forRoot({
@@ -55,7 +77,6 @@ function typeOrmSettings(): DynamicModule {
             synchronize: true,
         })
     }
-
     throw `Invalid database type: ${type}`;
 }
 
@@ -81,36 +102,18 @@ export class AppModule {
      * Run the main web service.
      */
     static async run_app_server() {
-        const logLevel = process.env.LOG_LEVEL || "debug log warn error fatal"
 
-        const app = await NestFactory.create(AppModule,
-            {
-                // @ts-ignore
-                logger: logLevel.split(' ')
-            });
+        const app = await NestFactory.create(AppModule, {
+            // @ts-ignore
+            logger: (process.env.LOG_LEVEL || "debug,log,warn,error,fatal").split(","),
+        });
 
         const config = new DocumentBuilder()
             .setTitle('Private Health Insurance (PHI) Product Search API')
-            .setDescription(
-                "This is a demonstration/sample API server built with <a target='_blank' href='https://nestjs.com/'>NestJS</a>.<br><br>" +
-                "The API serves information about **Australian private health insurance** funds and products. <em>Its only purpose is " +
-                "as a platform to provide a non-trivial dataset for personal research, investigation and " +
-                "education into web application development technologies</em>.<br><br>" +
-                "To allow for easier comparison of health insurance products, all Australian health insurers " +
-                "are required by law to create a Private Health Information Statement for each of their products. " +
-                "These statements are collated by the **Australian Private Health Insurance Ombudsman** (PHIO) and published on  " +
-                "<a target='_blank' href='https://data.gov.au/dataset/ds-dga-8ab10b1f-6eac-423c-abc5-bbffc31b216c/details?q=PHIO'>data.gov.au</a>. " +
-                "Further information about PHIO can be found at " +
-                "<a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a><br><br>" +
-                "This site and application has no connection to the Australian Private Health Insurance Ombudsman, and is purely a personal, " +
-                "non-commercial, non-official project.  Data provided by this API is not to be relied upon for any comparison of, or research into, " +
-                "private health insurance products.  Please use <a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a> " +
-                "or one of the commercial product comparison services."
-            )
+            .setDescription(API_DESCRIPTION)
             .setVersion('1.0')
             .build();
-        const documentFactory = () => SwaggerModule.createDocument(app, config);
-        SwaggerModule.setup('swagger', app, documentFactory);
+        SwaggerModule.setup('swagger', app, SwaggerModule.createDocument(app, config));
 
         app.enableCors({
             origin: true,
@@ -124,6 +127,7 @@ export class AppModule {
 
         await app.listen(process.env.PORT ?? 3000);
     }
+
     /**
      * Run the command factory.
      */
