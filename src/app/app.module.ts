@@ -14,6 +14,7 @@ import * as process from "node:process";
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import { CommandFactory } from 'nest-commander';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ScheduleModule} from '@nestjs/schedule';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -64,6 +65,7 @@ function typeOrmSettings(): DynamicModule {
 @Module({
     imports: [
         ConfigModule.forRoot(),
+        ScheduleModule.forRoot(),
         typeOrmSettings(),
         FundsModule,
         ProductsModule,
@@ -79,7 +81,13 @@ export class AppModule {
      * Run the main web service.
      */
     static async run_app_server() {
-        const app = await NestFactory.create(AppModule);
+        const logLevel = process.env.LOG_LEVEL || "debug log warn error fatal"
+
+        const app = await NestFactory.create(AppModule,
+            {
+                // @ts-ignore
+                logger: logLevel.split(' ')
+            });
 
         const config = new DocumentBuilder()
             .setTitle('Private Health Insurance (PHI) Product Search API')

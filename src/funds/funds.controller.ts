@@ -9,8 +9,8 @@ import { ApiOperation } from '@nestjs/swagger';
 import { CacheService } from '../cache/cache.service';
 
 
-@Controller('funds')
-export class FundsController {
+@Controller('')
+export class FundController {
     constructor(
         private readonly fundsService: FundsService,
         private readonly cacheService: CacheService
@@ -19,7 +19,7 @@ export class FundsController {
     /**
      * Returns all fund records.
      */
-    @Get()
+    @Get('funds')
     @ApiOperation({
         summary: 'Return all fund records.',
         description: `Return all **fund** records`,
@@ -28,7 +28,7 @@ export class FundsController {
         return this.fundsService.findAll();
     }
 
-    @Get("brands")
+    @Get("fund-brands")
     @ApiOperation({
         summary: 'Return all fund brand records.',
         description: `Return all **fund-brand** records`,
@@ -37,7 +37,7 @@ export class FundsController {
         return this.fundsService.findAllFundBrands();
     }
 
-    @Get("xml")
+    @Get("fund-xml")
     @Header('content-type', 'application/xml')
     @ApiOperation({
         summary: 'Returns all fund details in XML format.',

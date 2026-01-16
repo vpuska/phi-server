@@ -8,7 +8,7 @@
 import { Module } from '@nestjs/common';
 import {TypeOrmModule} from "@nestjs/typeorm";
 
-import { ProductsController } from './products.controller';
+import { ProductsController, ProductSearchController, ProductServicesController } from './products.controller';
 import { ProductsService } from './products.service';
 import { Product } from "./entities/product.entity";
 import { HealthService } from './entities/health-service.entity';
@@ -17,11 +17,12 @@ import { CacheModule } from '../cache/cache.module'
 import { ProductsLoadService } from './products.load.service';
 import { ProductsCacheService } from './products.cache.service';
 import { SystemModule } from '../system/system.module';
+import { FundsModule } from '../funds/funds.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, HealthService, HospitalTier]), CacheModule, SystemModule],
+  imports: [TypeOrmModule.forFeature([Product, HealthService, HospitalTier]), FundsModule, CacheModule, SystemModule],
   exports: [TypeOrmModule, ProductsService, ProductsLoadService, ProductsCacheService],
   providers: [ProductsService, ProductsLoadService, ProductsCacheService],
-  controllers: [ProductsController]
+  controllers: [ProductsController, ProductSearchController, ProductServicesController]
 })
 export class ProductsModule {}

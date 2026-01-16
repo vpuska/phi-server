@@ -40,7 +40,7 @@ PRODUCT_SEARCH_CACHE=compressed
 
 ## Loading PHI Data
 
-To load PHI Data: `bash nest start -- phi-load` or for production: `bash node dist/main phi-load`.
+To load PHI Data: `bash nest start -- import` or for production: `bash node dist/main import`.
 
 This will download the latest dataset from data.gov.au.
 

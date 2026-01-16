@@ -4,12 +4,12 @@
  * @author: V.Puska
  * @date: 12-Dec-2024
  */
-import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param } from '@nestjs/common';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param, Query } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 
 /**
- * **ProductController** provides access to product queries and actions.
+ * **ProductController** provides access to the cacheable product queries.
  */
 @Controller('products')
 export class ProductsController {
@@ -59,29 +59,6 @@ export class ProductsController {
             return product;
         else
             throw new NotFoundException(`Product ${code1}/${code2} found.`);
-    }
-
-    @Get('titles')
-    @ApiOperation({
-        summary: 'Return a list of distinct product titles.',
-        description: 'Return a list of distinct product titles.',
-    })
-    titleList() {
-        return this.productService.getProductTitles()
-    }
-
-    /**
-     * Return a list of hospital and general services
-     */
-    @Get('services')
-    @ApiOperation({
-        summary: 'Return a list of hospital and general medical services.',
-        description:
-            'Return a list of hospital and general medical services and provides a mapping between the mnemonics' +
-            'stored in the product record against the actual service description and code.',
-    })
-    serviceList() {
-        return this.productService.serviceList();
     }
 
     /**
@@ -140,4 +117,105 @@ export class ProductsController {
     ) {
         return this.productService.findByFund(fundCode);
     }
+}
+
+/**
+ * **ProductSearchController** provides access to product search.
+ */
+@ApiTags('Product Search')
+@Controller('product-search')
+export class ProductSearchController {
+
+    constructor(private readonly productService: ProductsService) {}
+
+    /**
+     * Return a list of matching products by title.  The keywords are matched against the product title and fund/branch name.
+     * @example /product-search/by-name?name=Hospital%20Gold%20Plus&fund=NIB
+     * @param title - Exact title to search for.
+     * @param fundOrBrandCode - fund or brand code to search for.  If not specified, all funds are searched.
+     */
+    @Get('by-name')
+    @ApiOperation({
+        summary: 'Return a list of matching products by title.',
+        description: 'Return a list of matching products by title.',
+    })
+    @ApiQuery({
+        name: 'name',
+        description: 'Product title.',
+        required: true,
+        example: 'Hospital Gold Plus'
+    })
+    @ApiQuery({
+        name: 'fund',
+        description: 'Fund code.',
+        required: false,
+        example: 'NIB'
+    })
+    @ApiQuery({
+        name: 'count',
+        description: 'Number of records to return.  Default is 20.',
+        required: false,
+        example: 15
+    })
+    getTitleList(
+        @Query('name') title: string,
+        @Query('fund') fundOrBrandCode: string = null,
+    ) {
+        return this.productService.findByTitle(title, fundOrBrandCode);
+    }
+
+    /**
+     * Return a list of matching products by keywords.  The keywords are matched against the product title and fund/branch name.
+     * @example /product-search/by-keyword?keywords=hospital%20gold%20plus
+     * @param keywords - keywords to search for.
+     * @param count - maximum number of records to return.  Default is 20.
+     */
+    @Get('by-keyword')
+    @ApiOperation({
+        summary: 'Return a list of matching products by keywords.',
+        description: 'Return a list of matching products by keywords.',
+    })
+    @ApiQuery({
+        name: 'keywords',
+        description: 'Keywords to search for.',
+        required: true,
+        example: 'hospital gold plus'
+    })
+    @ApiQuery({
+        name: 'count',
+        description: 'Number of records to return.  Default is 50.',
+        required: false,
+        example: 15
+    })
+    search(
+        @Query('keywords') keywords: string,
+        @Query('count') count: number = 50
+    ) {
+        return this.productService.searchKeyWords(keywords, count);
+    }
+}
+
+/**
+ * **ProductServicesController** provides access to product services.
+ */
+@ApiTags('Product Services')
+@Controller('product-services')
+export class ProductServicesController {
+    constructor(private readonly productService: ProductsService) {}
+
+    /**
+     * Return a list of hospital and general medical services.
+     */
+    @Get('')
+    @ApiOperation({
+        summary: 'Return a list of hospital and general medical services.',
+        description:
+            'Return a list of hospital and general medical services and provides a mapping between the mnemonics' +
+            'stored in the product record against the actual service description and code.',
+    })
+    serviceList() {
+        return this.productService.serviceList();
+    }
+
+
 }
