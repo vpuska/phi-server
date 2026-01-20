@@ -20,16 +20,16 @@ export class ProductsController {
      * Retrieve the XML data for a single product.  Code is split into 2 fields because the
      * product code includes the `/` character.  EG `I119/WNDI2D`
      *
-     * @param fundCode - The fund for this product.  EG. HIF
-     * @param code1 - 1st part of product code.  EG ```I119```
-     * @param code2 - Snd part of product code.  EG ```WND12D```
+     * @param fundCode - The fund for this product.  EG. `HIF`
+     * @param code1 - 1st part of product code.  EG `I119`
+     * @param code2 - Snd part of product code.  EG `WND12D`
      */
     @Get('xml/:fundCode/:code1/:code2')
     @Header('content-type', 'application/xml')
     @ApiOperation({
         summary: 'Return XML for a single product.',
         description:
-            'Returns the XML for a sing product using the product code as a key. Eg: `I119/WND12D`',
+            'Returns the XML for a single product using the product code as a key. Eg: `I119/WND12D`',
     })
     @ApiParam({
         name: 'fundCode',
@@ -169,6 +169,7 @@ export class ProductSearchController {
      * @example /product-search/by-keyword?keywords=hospital%20gold%20plus
      * @param keywords - keywords to search for.
      * @param count - maximum number of records to return.  Default is 20.
+     * @param timeout - maximum time in milliseconds to wait for results.  Default is 1000ms.
      */
     @Get('by-keyword')
     @ApiOperation({
@@ -187,11 +188,18 @@ export class ProductSearchController {
         required: false,
         example: 15
     })
+    @ApiQuery({
+        name: 'timeout',
+        description: 'Maximum time in milliseconds to wait for results.  Default is 1000ms.',
+        required: false,
+        example: 1500
+    })
     search(
         @Query('keywords') keywords: string,
-        @Query('count') count: number = 50
+        @Query('count') count: number = 50,
+        @Query('timeout') timeout: number = 1000,
     ) {
-        return this.productService.searchKeyWords(keywords, count);
+        return this.productService.searchKeyWords(keywords, count, timeout);
     }
 }
 
