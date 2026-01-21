@@ -43,6 +43,17 @@ export class FundsService {
     }
 
     /**
+     * Return all funds/brand records as a Map structure.
+     * @returns A Map of fund/brand codes to fund/brand records
+     */
+    async getFundBrandMap() : Promise<Map<string,FundBrand>> {
+        const brands = await this.findAllFundBrands();
+        const brandMap = new Map<string,FundBrand>();
+        brands.forEach(brand => brandMap.set(brand.code, brand));
+        return brandMap;
+    }
+
+    /**
      * Return one fund.
      * @param code  The fund code - Eg. ```BUP```
      */

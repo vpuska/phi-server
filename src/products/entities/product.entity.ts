@@ -13,9 +13,6 @@ import { HospitalTier } from './hospital-tier.entity';
  * are relevant to sorting, searching and management are extracted and stored as a separate column
  * in the table.  All other information needs to be extracted from the product XML in the `product.xml`
  * field.
- *
- * @Note The {@link PhiDataService.run} will set the status to `Orphaned` when a record is dropped from
- * the downloaded dataset.
  */
 @Entity({name: 'products'})
 @Index(['state', 'adultsCovered', 'childCover'])
@@ -32,6 +29,9 @@ export class Product {
     })
     @JoinColumn({name:'fundCode'})
     fund: Fund;
+
+    @Column({length:32})
+    fundBrandCode: string;
 
     @Column({length:64})
     name: string;

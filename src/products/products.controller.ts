@@ -201,6 +201,37 @@ export class ProductSearchController {
     ) {
         return this.productService.searchKeyWords(keywords, count, timeout);
     }
+
+    @Get('by-keyword2')
+    @ApiOperation({
+        summary: 'Return a list of matching products by keywords for an individual product name and fund/brand.',
+        description: 'Return a list of matching products by keywords for an individual product name and fund/brand.',
+    })
+    @ApiQuery({
+        name: 'name',
+        description: 'Exact product name to search for.',
+        required: true,
+        example: 'Hospital Gold Plus $250/$500 Excess'
+    })
+    @ApiQuery({
+        name: 'fund',
+        description: 'Fund or brand code filter',
+        required: true,
+        example: 'NIB01'
+    })
+    @ApiQuery({
+        name: 'keywords',
+        description: 'Keywords to search for.',
+        required: true,
+        example: 'hospital gold plus'
+    })
+    search2(
+        @Query('name') name: string,
+        @Query('fund') fundOrBrandCode: string,
+        @Query('keywords') keywords: string,
+    ) {
+        return this.productService.searchKeyWords2(name, fundOrBrandCode, keywords);
+    }
 }
 
 /**

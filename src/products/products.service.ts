@@ -8,7 +8,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Interval } from '@nestjs/schedule';
 
-import { FindOptionsSelect, In, Like, MoreThanOrEqual, Repository } from 'typeorm';
+import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
@@ -101,7 +101,7 @@ class ProductNameEntry {
     tokens() {
         let str = this.productNameSearchString().toLowerCase() + " nsw act vic qld tas sa wa nt";
         if (this.has0Adults) str = str.concat(" dependants dependents children");
-        if (this.has1Adults) str = str.concat(this.hasDependants ? " single parent" : " single");
+        if (this.has1Adults) str = str.concat(this.hasDependants ? " sole parent" : " single");
         if (this.has2Adults) str = str.concat(this.hasDependants ? " family" : " couple");
         if (this.hasDisability) str = str.concat(" disability");
 
@@ -119,6 +119,8 @@ export class ProductsService {
     private timeStamp = new Date(0);
     // Array of distinct product names.
     private productNames = new Array<ProductNameEntry>();
+    // Map of fund/brands codes
+    private fundBrands = new Map<string, FundBrand>();
     private logger = new Logger(ProductsService.name);
 
     constructor(
@@ -132,6 +134,8 @@ export class ProductsService {
         private readonly systemService: SystemService,
         private readonly fundsService: FundsService,
     ) {
+        ProductNameEntry.fundBrands = this.fundBrands;
+
         // Initialise the IMPORT timestamp.
         this.updateTimeStamp();
     }
@@ -150,27 +154,26 @@ export class ProductsService {
                     this.logger.debug(`IMPORT time stamp changed to ${timeStampString}`);
 
                     // Load all the fund and brands into memory.
-                    this.fundsService.findAllFundBrands().then(fundBrands => {
-                        for (const fundBrand of fundBrands)
-                            ProductNameEntry.fundBrands.set(fundBrand.code, fundBrand);
+                    this.fundsService.getFundBrandMap().then(fundBrands => {
+                        this.fundBrands = fundBrands;
+                        ProductNameEntry.fundBrands = fundBrands;
                     });
 
                     // Load all the product names into memory.
                     this.productRepository
                         .createQueryBuilder()
                         .distinct(true)
-                        .select(['fundCode', 'name', 'brands', 'adultsCovered', 'dependantCover', 'disabilityCover'])
+                        .select(['name', 'fundBrandCode', 'adultsCovered', 'dependantCover', 'disabilityCover'])
                         .where({timeStamp: MoreThanOrEqual(this.timeStamp)})
                         .orderBy({'name': 'ASC', 'fundCode': 'ASC', 'brands': 'ASC'})
                         .getRawMany().then(rows => {
                             this.logger.debug(`Pre-loading ${rows.length} product names.`);
                             let lastProduct = new ProductNameEntry("", "");
                             for (const row of rows) {
-                                const thisFundBrand = row.brands ? row.brands : row.fundCode;
-                                if (thisFundBrand !== lastProduct.fundBrandCode || row.name !== lastProduct.name) {
+                                if (row.fundBrandCode !== lastProduct.fundBrandCode || row.name !== lastProduct.name) {
                                     if (lastProduct.name !== "")
                                         this.productNames.push(lastProduct);
-                                    lastProduct = new ProductNameEntry(row.name, thisFundBrand);
+                                    lastProduct = new ProductNameEntry(row.name, row.fundBrandCode);
                                 }
                                 lastProduct.addCoverage(row.adultsCovered, row.dependantCover, row.disabilityCover);
                             }
@@ -226,6 +229,12 @@ export class ProductsService {
         })
     }
 
+    /**
+     * List all OPEN products table extracting policies for a single product name.  Includes corporate products.  If
+     * querying for a fund, all brand products are included.
+     * @param title The product name to search for (exact match).
+     * @param fundOrBrandCode Options fund or brand code.
+     */
     async findByTitle(title: string, fundOrBrandCode: string = null) {
         const where = {
             name: title,
@@ -233,8 +242,7 @@ export class ProductsService {
         }
         if (fundOrBrandCode) {
             where['fundCode'] = fundOrBrandCode.substring(0, 3);
-            if (fundOrBrandCode.length > 3)
-                where['brands'] = Like(`%${fundOrBrandCode}%`);
+            where['fundBrandCode'] = fundOrBrandCode;
         }
         return await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
@@ -265,37 +273,18 @@ export class ProductsService {
             // Now we do the same thing, but a detailed match of individual products against the search terms!
             const products = await this.findByTitle(productName.name, productName.fundBrandCode);
             for (const product of products) {
-                targetText = productName.productNameSearchString().toLowerCase().split(/\s+/);
+                targetText = this.getProductTokens(product);
 
-                // extract the state token
-                const state = product.state === 'ALL' ? ['nsw', 'vic', 'qld', 'tas', 'sa', 'wa', 'nt'] : [product.state];
-                if (state[0].toLowerCase() === 'nsw')
-                    state.push('act');
-                state.map(s => targetText.push(s.toLowerCase()));
-
-                // extract family type token
-                switch (product.adultsCovered) {
-                    case 0:
-                        ['dependants', 'dependants', 'children'].map(s => targetText.push(s));
-                        break;
-                    case 1:
-                        (product.dependantCover ? [ 'single', 'parent'] : ['single']).map(s => targetText.push(s));
-                        break;
-                    default:
-                        targetText.push(product.dependantCover ? 'family' : 'couple');
-                }
-
-                // extract disability token
-                if (product.disabilityCover) targetText.push('disability');
-
-                // now check if the product matches the search terms
+                // now check if at least one product matches the search terms
                 isMatch = kwTokens.every(kwToken => targetText.some(word => word.startsWith(kwToken)));
                 if (isMatch) {
-                    results.push(productName.name);
+                    results.push({
+                        name: productName.name,
+                        fund: productName.fundBrandCode
+                    });
                     break;
                 }
             }
-
             if (results.length >= count)
                 break;
 
@@ -306,18 +295,58 @@ export class ProductsService {
     }
 
     /**
-     * Return all product titles
+     * Search products by title (exact match) AND key words.  Returns a list of products matching the search terms.  The search terms are split
+     * into individual words and each word must appear in the product name or brand name.  The search is case insensitive.  This function is
+     * typically called after {@link searchKeyWords} to further refine the results.
+     * @param productName The product name to search for (exact match).  Usually a title returned from {@link searchKeyWords}.
+     * @param fundBrandCode The fund or brand code to search for.  Usually a fund or brand code returned from {@link searchKeyWords}.
+     * @param keyWords Keyword search terms.  Usually the same terms used for {@link searchKeyWords}.
      */
-    async getProductTitles() {
-        return await this.productRepository
-            .createQueryBuilder()
-            .distinct(true)
-            .select(['fundCode', 'name', 'brands'])
-            .orderBy({
-                'name': 'ASC',
-                'fundCode': 'ASC',
-            })
-            .getRawMany();
+    async searchKeyWords2(productName: string, fundBrandCode: string, keyWords: string) : Promise<Product[]> {
+        const kwTokens = keyWords.toLowerCase().split(/\s+/)
+        const results = [];
+
+        const products = await this.findByTitle(productName, fundBrandCode);
+        for (const product of products) {
+            const productTokens = this.getProductTokens(product);
+            const isMatch = kwTokens.every(kwToken => productTokens.some(word => word.startsWith(kwToken)));
+            if (isMatch)
+                results.push(product);
+        }
+        return results;
+    }
+
+    /**
+     * Extract the product tokens for a product.  The tokens are the product name and brand name split into individual words.
+     * The tokens are used for keyword searching.
+     * @param product
+     */
+    getProductTokens(product: Product) : string[] {
+        const productTokens = product.name.toLowerCase().split(/\s+/);
+
+        if (ProductNameEntry.fundBrands.has(product.fundBrandCode)) {
+            const fundBrand = this.fundBrands.get(product.fundBrandCode);
+            fundBrand.name.toLowerCase().split(/\s+/).map(s => productTokens.push(s));
+            fundBrand.shortName.toLowerCase().split(/\s+/).map(s => productTokens.push(s));
+        }
+
+        // extract the state token
+        const state = product.state === 'ALL' ? ['nsw', 'vic', 'qld', 'tas', 'sa', 'wa', 'nt'] : [product.state];
+        if (state[0].toLowerCase() === 'nsw')
+            state.push('act');
+        state.map(st => productTokens.push(st.toLowerCase()));
+
+        // extract family type token
+        [
+            ['dependent', 'dependant', 'children'],
+            product.dependantCover ? ['sole', 'parent'] : ['single'],
+            product.dependantCover ? ['family'] : ['couple'],
+        ] [product.adultsCovered].map(token => productTokens.push(token));
+
+        // extract disability token
+        if (product.disabilityCover) productTokens.push('disability');
+
+        return productTokens;
     }
 
     /**

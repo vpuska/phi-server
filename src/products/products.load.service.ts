@@ -69,6 +69,7 @@ export class ProductsLoadService {
             else
                 product.brands += `;${brand.textContent}`
         }
+        product.fundBrandCode = product.brands ? product.brands : product.fundCode;
 
         const elem = prodNode.getElementsByTagName("OnlyAvailableWith")[0].firstChild as XMLElement;
         product.onlyAvailableWith = elem.tagName;
