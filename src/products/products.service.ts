@@ -22,6 +22,7 @@ const LIST_FIELDS = [
     'code',
     'name',
     'fundCode',
+    'fundBrandCode',
     'type',
     'isCorporate',
     'brands',
@@ -263,7 +264,6 @@ export class ProductsService {
         const results = [];
 
         for (const productName of this.productNames) {
-
             // preliminary test matching the product name tokens against the search terms
             let targetText = productName.tokens();
             let isMatch = kwTokens.every(kwToken => targetText.some(word => word.startsWith(kwToken)));
@@ -277,6 +277,7 @@ export class ProductsService {
 
                 // now check if at least one product matches the search terms
                 isMatch = kwTokens.every(kwToken => targetText.some(word => word.startsWith(kwToken)));
+
                 if (isMatch) {
                     results.push({
                         name: productName.name,
@@ -326,7 +327,7 @@ export class ProductsService {
     getProductTokens(product: Product) : string[] {
         const productTokens = product.name.toLowerCase().split(/\s+/);
 
-        if (ProductNameEntry.fundBrands.has(product.fundBrandCode)) {
+        if (this.fundBrands.has(product.fundBrandCode)) {
             const fundBrand = this.fundBrands.get(product.fundBrandCode);
             fundBrand.name.toLowerCase().split(/\s+/).map(s => productTokens.push(s));
             fundBrand.shortName.toLowerCase().split(/\s+/).map(s => productTokens.push(s));
