@@ -280,7 +280,9 @@ export class ProductsService {
                 if (isMatch) {
                     results.push({
                         name: productName.name,
-                        fund: productName.fundBrandCode
+                        fund: productName.fundBrandCode,
+                        fundName: this.fundBrands.get(productName.fundBrandCode).name,
+                        fundShortName: this.fundBrands.get(productName.fundBrandCode).shortName,
                     });
                     break;
                 }
