@@ -170,6 +170,9 @@ export class ProductSearchController {
      * @param keywords - keywords to search for.
      * @param count - maximum number of records to return.  Default is 20.
      * @param timeout - maximum time in milliseconds to wait for results.  Default is 1000ms.
+     * @param combined - include combined products in results.  Default is true.
+     * @param hospital - include hospital products in results.  Default is true.
+     * @param extras - include extra (general health) products in results.  Default is true.
      */
     @Get('by-keyword')
     @ApiOperation({
@@ -194,12 +197,30 @@ export class ProductSearchController {
         required: false,
         example: 1500
     })
+    @ApiQuery({
+        name: 'combined',
+        description: 'Include combined products in results.  Default is true.',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'hospital',
+        description: 'Include hospital products in results.  Default is true.',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'extras',
+        description: 'Include extras (general health) products in results.  Default is true.',
+        required: false,
+    })
     search(
         @Query('keywords') keywords: string,
         @Query('count') count: number = 50,
         @Query('timeout') timeout: number = 1000,
+        @Query('combined') combined: boolean = true,
+        @Query('hospital') hospital: boolean = true,
+        @Query('extras') extras: boolean = true,
     ) {
-        return this.productService.searchKeyWords(keywords, count, timeout);
+        return this.productService.searchKeyWords(keywords, combined, hospital, extras, count, timeout);
     }
 
     @Get('by-keyword2')
