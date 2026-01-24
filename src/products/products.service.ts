@@ -301,7 +301,7 @@ export class ProductsService {
 
                 if (isMatch) {
                     results.push({
-                        name: productName.name,
+                        productName: productName.name,
                         fund: productName.fundBrandCode,
                         fundName: this.fundBrands.get(productName.fundBrandCode).name,
                         fundShortName: this.fundBrands.get(productName.fundBrandCode).shortName,
@@ -322,6 +322,7 @@ export class ProductsService {
      * Search products by title (exact match) AND key words.  Returns a list of products matching the search terms.  The search terms are split
      * into individual words and each word must appear in the product name or brand name.  The search is case insensitive.  This function is
      * typically called after {@link searchKeyWords} to further refine the results.
+     * @note Where a product has a state of `ALL`, the results are expanded for each matching state.
      * @param productName The product name to search for (exact match).  Usually a title returned from {@link searchKeyWords}.
      * @param fundBrandCode The fund or brand code to search for.  Usually a fund or brand code returned from {@link searchKeyWords}.
      * @param keyWords Keyword search terms.  Usually the same terms used for {@link searchKeyWords}.
@@ -332,10 +333,15 @@ export class ProductsService {
 
         const products = await this.findByTitle(productName, fundBrandCode);
         for (const product of products) {
-            const productTokens = this.getProductTokens(product);
-            const isMatch = kwTokens.every(kwToken => productTokens.some(word => word.startsWith(kwToken)));
-            if (isMatch)
-                results.push(product);
+            const states = product.state === 'ALL' ? ['NSW', 'VIC', 'QLD', 'TAS', 'SA', 'WA', 'NT'] : [product.state];
+            for (const st of states) {
+                const prodState = {...product} as Product;
+                prodState.state = st;
+                const productTokens = this.getProductTokens(prodState);
+                const isMatch = kwTokens.every(kwToken => productTokens.some(word => word.startsWith(kwToken)));
+                if (isMatch)
+                    results.push(prodState);
+            }
         }
         return results;
     }
@@ -343,7 +349,7 @@ export class ProductsService {
     /**
      * Extract the product tokens for a product.  The tokens are the product name and brand name split into individual words.
      * The tokens are used for keyword searching.
-     * @param product
+     * @param product The product object.
      */
     getProductTokens(product: Product) : string[] {
         const productTokens = product.name.toLowerCase().split(/\s+/);
