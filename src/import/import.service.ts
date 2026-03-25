@@ -30,8 +30,8 @@ import { CacheMode, CacheService } from '../cache/cache.service';
 import { ProductsLoadService } from '../products/products.load.service';
 
 
-// Link to PHIO datasets hosted on data.gov.au
-const URL = "https://data.gov.au/api/3/action/package_show?id=private-health-insurance";
+// Default link to PHIO datasets hosted on data.gov.au
+const URL = "https://data.gov.au/data/api/3/action/package_show?id=private-health-insurance";
 
 
 /**
@@ -167,7 +167,9 @@ export class ImportService {
      */
     async run(force: boolean) {
         // fetch the data package description file (JSON) from data.gov.au;
-        let response = await fetch(URL);
+        const url =  process.env.PACKAGE_URL || URL;
+        this.logger.log("Fetching data package from data.gov.au: " + url);
+        let response = await fetch(process.env.PACKAGE_URL || URL);
         if (!response.ok) {
             this.logger.error("Error fetching data package from data.gov.au:" + response.statusText);
             return;
