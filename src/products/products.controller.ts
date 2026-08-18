@@ -4,9 +4,10 @@
  * @author: V.Puska
  * @date: 12-Dec-2024
  */
-import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
+import { ProductsSearchService } from './products.search.service';
 
 /**
  * **ProductController** provides access to the cacheable product queries.
@@ -119,6 +120,7 @@ export class ProductsController {
     }
 }
 
+
 /**
  * **ProductSearchController** provides access to product search.
  */
@@ -126,134 +128,19 @@ export class ProductsController {
 @Controller('product-search')
 export class ProductSearchController {
 
-    constructor(private readonly productService: ProductsService) {}
+    constructor(private readonly ProductSearchService: ProductsSearchService) {
+    }
 
-    /**
-     * Return a list of matching products by title.  The keywords are matched against the product title and fund/branch name.
-     * @example /product-search/by-name?name=Hospital%20Gold%20Plus&fund=NIB
-     * @param title - Exact title to search for.
-     * @param fundOrBrandCode - fund or brand code to search for.  If not specified, all funds are searched.
-     */
-    @Get('by-name')
+    @Get('dataset')
     @ApiOperation({
-        summary: 'Return a list of matching products by title.',
+        summary: 'Return dataset of product titles and product codes with searchable attributes.',
         description: 'Return a list of matching products by title.',
     })
-    @ApiQuery({
-        name: 'name',
-        description: 'Product title.',
-        required: true,
-        example: 'Hospital Gold Plus'
-    })
-    @ApiQuery({
-        name: 'fund',
-        description: 'Fund code.',
-        required: false,
-        example: 'NIB'
-    })
-    @ApiQuery({
-        name: 'count',
-        description: 'Number of records to return.  Default is 20.',
-        required: false,
-        example: 15
-    })
-    getTitleList(
-        @Query('name') title: string,
-        @Query('fund') fundOrBrandCode: string = null,
-    ) {
-        return this.productService.findByTitle(title, fundOrBrandCode);
-    }
-
-    /**
-     * Return a list of matching products by keywords.  The keywords are matched against the product title and fund/branch name.
-     * @example /product-search/by-keyword?keywords=hospital%20gold%20plus
-     * @param keywords - keywords to search for.
-     * @param count - maximum number of records to return.  Default is 20.
-     * @param timeout - maximum time in milliseconds to wait for results.  Default is 1000ms.
-     * @param combined - include combined products in results.  Default is true.
-     * @param hospital - include hospital products in results.  Default is true.
-     * @param extras - include extra (general health) products in results.  Default is true.
-     */
-    @Get('by-keyword')
-    @ApiOperation({
-        summary: 'Return a list of matching products by keywords.',
-        description: 'Return a list of matching products by keywords.',
-    })
-    @ApiQuery({
-        name: 'keywords',
-        description: 'Keywords to search for.',
-        required: true,
-        example: 'hospital gold plus'
-    })
-    @ApiQuery({
-        name: 'count',
-        description: 'Number of records to return.  Default is 50.',
-        required: false,
-        example: 15
-    })
-    @ApiQuery({
-        name: 'timeout',
-        description: 'Maximum time in milliseconds to wait for results.  Default is 1000ms.',
-        required: false,
-        example: 1500
-    })
-    @ApiQuery({
-        name: 'combined',
-        description: 'Include combined products in results.  Default is true.',
-        required: false,
-    })
-    @ApiQuery({
-        name: 'hospital',
-        description: 'Include hospital products in results.  Default is true.',
-        required: false,
-    })
-    @ApiQuery({
-        name: 'extras',
-        description: 'Include extras (general health) products in results.  Default is true.',
-        required: false,
-    })
-    search(
-        @Query('keywords') keywords: string,
-        @Query('count') count: number = 50,
-        @Query('timeout') timeout: number = 1000,
-        @Query('combined') combined: boolean = true,
-        @Query('hospital') hospital: boolean = true,
-        @Query('extras') extras: boolean = true,
-    ) {
-        return this.productService.searchKeyWords(keywords, combined, hospital, extras, count, timeout);
-    }
-
-    @Get('by-keyword2')
-    @ApiOperation({
-        summary: 'Return a list of matching products by keywords for an individual product name and fund/brand.',
-        description: 'Return a list of matching products by keywords for an individual product name and fund/brand.',
-    })
-    @ApiQuery({
-        name: 'name',
-        description: 'Exact product name to search for.',
-        required: true,
-        example: 'Hospital Gold Plus $250/$500 Excess'
-    })
-    @ApiQuery({
-        name: 'fund',
-        description: 'Fund or brand code filter',
-        required: true,
-        example: 'NIB01'
-    })
-    @ApiQuery({
-        name: 'keywords',
-        description: 'Keywords to search for.',
-        required: true,
-        example: 'hospital gold plus'
-    })
-    search2(
-        @Query('name') name: string,
-        @Query('fund') fundOrBrandCode: string,
-        @Query('keywords') keywords: string,
-    ) {
-        return this.productService.searchKeyWords2(name, fundOrBrandCode, keywords);
+    listDataset() {
+        return this.ProductSearchService.getDataset();
     }
 }
+
 
 /**
  * **ProductServicesController** provides access to product services.
@@ -276,6 +163,5 @@ export class ProductServicesController {
     serviceList() {
         return this.productService.serviceList();
     }
-
 
 }
