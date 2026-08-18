@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Interval } from '@nestjs/schedule';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 
-import { compressAttributes} from 'phi-common/src/util/products';
+import { compressAttributes} from 'phi-common';
 
 import { Product } from './entities/product.entity';
 import { SystemService } from '../system/system.service';
