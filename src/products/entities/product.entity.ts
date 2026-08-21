@@ -1,9 +1,10 @@
-/**
+/*
  * products/entities/product.entity.ts
- * ---
- * @author V.Puska
- * @date: 05-Jan-25
+ * -----------------------------------
+ * author V.Puska
+ * date: 05-Jan-25
  */
+
 import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import {Fund} from "../../funds/entities/fund.entity";
 import { HospitalTier } from './hospital-tier.entity';

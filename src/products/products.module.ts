@@ -1,8 +1,8 @@
-/**
- * products/products.module.ys
- * ---
- * @author V.Puska
- * @date: 01-Dec-2024
+/*
+ * products/products.module.ts
+ * ---------------------------
+ * author V.Puska
+ * date: 01-Dec-2024
  */
 
 import { Module } from '@nestjs/common';

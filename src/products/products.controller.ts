@@ -1,9 +1,10 @@
-/**
+/*
  * products/products.controller.ts
- * ---
- * @author: V.Puska
- * @date: 12-Dec-2024
+ * -------------------------------
+ * author: V.Puska
+ * date: 12-Dec-2024
  */
+
 import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';

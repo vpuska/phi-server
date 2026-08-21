@@ -1,5 +1,13 @@
+/*
+ * products/products.cache.service.ts
+ * ----------------------------------
+ * author: V. Puska
+ * date: 20-Jul-2026
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { CacheService, CacheMode } from '../cache/cache.service';
+import { AUS_STATES } from 'phi-common';
 
 @Injectable()
 export class ProductsCacheService {
@@ -57,7 +65,7 @@ export class ProductsCacheService {
     async cacheProductSegmentQueries(queryFunction: (state: string, adultsCovered: 0 | 1 | 2, dependants: boolean) => any) {
         this.logger.log(`PRODUCT_SEARCH_CACHE=${this.productSearchCacheMode}`);
         if (this.productSearchCacheMode !== "none")
-            for (const state of [ "NSW", "VIC", "QLD", "TAS", "SA", "WA", "NT" ])
+            for (const state of AUS_STATES)
                 for (const adults of [0, 1, 2])
                     for (const dependants of [true, false])
                         if (adults > 0 || dependants)

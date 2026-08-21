@@ -1,8 +1,8 @@
-/**
+/*
  * products/products.search.service.ts
- * ----
- * @author: V. Puska
- * @date: 20-Jul-2026
+ * ------------------------------------
+ * author: V. Puska
+ * date: 20-Jul-2026
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -10,27 +10,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Interval } from '@nestjs/schedule';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 
-import { compressAttributes} from 'phi-common';
+import { compressAttributes, ProductSearchTitle } from 'phi-common';
 
 import { Product } from './entities/product.entity';
 import { SystemService } from '../system/system.service';
 
-/**
- * Object representing a disting product title
- */
-export interface ProductTitle {
-    name: string;
-    fundBrandCode: string;
-    type: string;
-}
-/**
- * Object representing a product code and associated title and attributes.
- */
-export interface ProductCodeAndAttributes {
-    productCode: string;
-    group: number;
-    attributes: number;
-}
 /**
  * **ProductSearchService**
  */
@@ -40,9 +24,7 @@ export class ProductsSearchService {
     // Latest import time stamp.  Used to determine which products to return from the database.
     private timeStamp = new Date(0);
     // Array of product titles
-    private productTitles = new Array<ProductTitle>();
-    // Array of product codes and associated title and attributes.
-    private productCodes = new Array<ProductCodeAndAttributes>();
+    private productTitles = new Array<ProductSearchTitle>();
 
     private logger = new Logger(ProductsSearchService.name);
 
@@ -55,7 +37,8 @@ export class ProductsSearchService {
         this.updateTimeStamp(); // this will also update the product search tables
     }
     /**
-     * Update the last run time stamp every 15 minutes.  Called directly by the constructor and scheduled by NestJS.
+     * Check the last import run time stamp every 15 minutes.  Called directly by the constructor and scheduled by NestJS.
+     * If the time stamp has changed, update the product search tables.
      */
     @Interval(15 * 60 * 1000)
     updateTimeStamp() {
@@ -69,9 +52,7 @@ export class ProductsSearchService {
         })
     }
     /**
-     * Load the product search tables into memory:
-     * - `productTitles` : Array of distinct product titles
-     * - `productCodes` : Array of product codes and associated title and attributes
+     * Load the product title search table into memory.
      */
     async buildProductSearchTables() {
 
@@ -85,10 +66,11 @@ export class ProductsSearchService {
             .orderBy({'name': 'ASC', 'fundCode': 'ASC', 'brands': 'ASC', 'type': 'ASC'})
             .getRawMany();
 
-        let currentTitle: ProductTitle = {
+        let currentTitle: ProductSearchTitle = {
             name: "",
             fundBrandCode: "",
             type: "",
+            products: []
         };
 
         for (const row of rows) {
@@ -99,14 +81,11 @@ export class ProductsSearchService {
                     name: row.name,
                     fundBrandCode: row.fundBrandCode,
                     type: row.type,
+                    products: []
                 };
                 this.productTitles.push(currentTitle);
             }
-            this.productCodes.push({
-                group: this.productTitles.length - 1,
-                productCode: row.code,
-                attributes: compressAttributes(row)
-            });
+            currentTitle.products.push(row.code, compressAttributes(row));
         }
 
         this.logger.debug(`Analysed ${rows.length} product records`);
@@ -114,14 +93,9 @@ export class ProductsSearchService {
     }
     /**
      * Retrieves a dataset containing product titles and product codes.
-     * - `productTitles` : Array of distinct product titles
-     * - `productCodes` : Array of product codes and associated title and attributes
      */
     getDataset() {
-        return {
-            productTitles: this.productTitles,
-            productCodes: this.productCodes,
-        }
+        return this.productTitles;
     }
 }
 

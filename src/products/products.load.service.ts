@@ -1,3 +1,10 @@
+/*
+ * products/products.load.services.ts
+ * ----------------------------------
+ * author V.Puska
+ * date: 05-Jan-25
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { Product } from './entities/product.entity';
 import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';

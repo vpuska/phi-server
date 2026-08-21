@@ -1,9 +1,10 @@
-/**
+/*
  * products/products.service.ts
- * ----
- * @author: V. Puska
- * @date: 03-Jan-2025
+ * ----------------------------
+ * author: V. Puska
+ * date: 03-Jan-2025
  */
+
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -47,54 +48,6 @@ const LIST_FIELDS = [
 ];
 
 /**
- * Represents a product fund/brand/name entry with associated coverage details and fund/brand information
- * for all the products matching the fund/brand/name.
- */
-class ProductNameEntry {
-    // Map of fund/brand codes to fund/brand records.
-    static fundBrands = new Map<string, FundBrand>();
-
-    // Flags representing whether one or more products with this title have this attribute
-    has0Adults: boolean = false;
-    has1Adults: boolean = false;
-    has2Adults: boolean = false;
-    hasDependants: boolean = false;
-    hasDisability: boolean = false;
-
-    constructor(
-        readonly name: string, 
-        readonly fundBrandCode: string,
-        readonly type: string,
-    ){}
-
-    /**
-     * Returns a string representation of the product name, including the fund/brand name if available.
-     */
-    productNameSearchString() {
-        let str = this.name;
-        if (ProductNameEntry.fundBrands.has(this.fundBrandCode)) {
-            const brand = ProductNameEntry.fundBrands.get(this.fundBrandCode);
-            str = str.concat(" ", brand.name, " ", brand.shortName);
-        }
-        return str;
-    }
-
-    /**
-     * Add coverage details for a product name.
-     * @param adultsCovered number of adults covered
-     * @param dependantCover  has dependant cover
-     * @param disabilityCover  has disability cover
-     */
-    addCoverage(adultsCovered: number, dependantCover: boolean, disabilityCover: boolean) {
-        this.has0Adults = this.has0Adults || adultsCovered === 0;
-        this.has1Adults = this.has1Adults || adultsCovered === 1;
-        this.has2Adults = this.has2Adults || adultsCovered === 2;
-        this.hasDependants = this.hasDependants || dependantCover;
-        this.hasDisability = this.hasDisability || disabilityCover;
-    }
-}
-
-/**
  * **ProductService**
  */
 @Injectable()
@@ -114,9 +67,7 @@ export class ProductsService {
         @InjectRepository(HospitalTier)
         private readonly hospitalTierRepository: Repository<HospitalTier>,
         private readonly productCacheService: ProductsCacheService,
-    ) {
-        ProductNameEntry.fundBrands = this.fundBrands;
-    }
+    ) {}
 
     /**
      * List OPEN products extracting matching policies for state/adults/dependants.
