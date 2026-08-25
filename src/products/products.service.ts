@@ -13,7 +13,6 @@ import { Product } from 'src/products/entities/product.entity';
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
 import { ProductsCacheService } from './products.cache.service';
-import { FundBrand} from '../funds/entities/fund-brand.entity';
 
 
 const LIST_FIELDS = [
@@ -56,8 +55,6 @@ export class ProductsService {
     // Latest import time stamp.  Used to determine which products to return from the database.
     private timeStamp = new Date(0);
     // Array of distinct product names.
-    // Map of fund/brands codes
-    private fundBrands = new Map<string, FundBrand>();
 
     constructor(
         @InjectRepository(Product)
@@ -68,6 +65,21 @@ export class ProductsService {
         private readonly hospitalTierRepository: Repository<HospitalTier>,
         private readonly productCacheService: ProductsCacheService,
     ) {}
+
+    /**
+     * Return a single product.
+     * @param fundCode
+     * @param productCode
+     */
+    async findOne(fundCode: string, productCode: string) {
+        return await this.productRepository.findOne({
+            select: LIST_FIELDS as FindOptionsSelect<Product>,
+            where: {
+                fundCode: fundCode,
+                code: productCode,
+            },
+        });
+    }
 
     /**
      * List OPEN products extracting matching policies for state/adults/dependants.
