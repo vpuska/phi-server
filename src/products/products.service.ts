@@ -61,6 +61,7 @@ const LIST_FIELDS = [
  */
 export function jsonStream(data: any): Readable {
     if (Array.isArray(data)) {
+        console.log("Records =", data.length)
         function* generate() {
             yield '[';
             for (let i = 0; i < data.length; i++) {
