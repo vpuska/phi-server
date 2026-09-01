@@ -216,11 +216,12 @@ export class ProductsService {
     async createProductCache() {
         const groups: SerializedProductGroup[] = [];
 
-        const rows = await this.productRepository
-            .createQueryBuilder()
-            .select(LIST_FIELDS)
-            .where({ timeStamp: MoreThanOrEqual(this.timeStamp) })
-            .orderBy({
+        const rows = await this.productRepository.find({
+            select: LIST_FIELDS as FindOptionsSelect<Product>,
+            where: {
+                timeStamp: MoreThanOrEqual(this.timeStamp)
+            },
+            order: {
                 name: 'ASC',
                 fundCode: 'ASC',
                 brands: 'ASC',
@@ -232,8 +233,8 @@ export class ProductsService {
                 onlyAvailableWith: 'ASC',
                 onlyAvailableWithProducts: 'ASC',
                 services: 'ASC',
-            })
-            .getRawMany();
+            }
+        });
 
         let currentGroup = ProductGroup.createFromObject(rows[0]);
 
