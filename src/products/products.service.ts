@@ -68,6 +68,7 @@ export function jsonStream(data: any): Readable {
                 if (i > 0) {
                     yield ',';
                 }
+                console.log("yield", i)
                 yield JSON.stringify(data[i]);
             }
             yield ']';
