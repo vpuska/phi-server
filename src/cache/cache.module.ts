@@ -7,6 +7,7 @@
  */
 import { Module } from '@nestjs/common';
 import { CacheService } from './cache.service';
+//import { ProductsService } from '../products/products.service';
 
 @Module({
     imports: [],

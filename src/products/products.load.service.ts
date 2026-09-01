@@ -11,7 +11,6 @@ import { DOMParser, Element as XMLElement } from '@xmldom/xmldom';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductsService } from './products.service';
-import { ProductsCacheService } from './products.cache.service';
 
 @Injectable()
 export class ProductsLoadService {
@@ -22,7 +21,6 @@ export class ProductsLoadService {
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>,
         private readonly productsService: ProductsService,
-        private readonly productsCacheService: ProductsCacheService,
     ){}
 
     /**
@@ -44,7 +42,7 @@ export class ProductsLoadService {
         if (unicodeErr >= 0)
             this.logger.warn(`Unicode character detected in ${fundCode}/${prodCode}`);
 
-        this.productsCacheService.writeProductXmlCache(fundCode, prodCode, newXml)
+        this.productsService.writeProductXmlCache(fundCode, prodCode, newXml)
 
         const product = this.productRepository.create();
 
@@ -56,14 +54,18 @@ export class ProductsLoadService {
         product.state = prodNode.getElementsByTagName('State')[0].textContent;
         product.premium = +getContent(prodNode, 'PremiumNoRebate', '0');
         product.hospitalComponent = +getContent(prodNode, 'PremiumHospitalComponent', '0');
+
         product.excessPerPerson = +getContent(prodNode, 'ExcessPerPerson', '0');
         product.excessPerAdmission = +getContent(prodNode, 'ExcessPerAdmission', '0' );
         product.excessPerPolicy = +getContent(prodNode, 'ExcessPerPolicy', '0');
-        product.excess = Math.max(
+
+        const excessValues = [
             product.excessPerPerson,
             product.excessPerAdmission,
-            product.excessPerPolicy,
-        );
+            product.excessPerPolicy
+        ].filter(x => x > 0);
+        product.excess = excessValues.length > 0 ? Math.min(...excessValues) : 0;
+
         product.hospitalTier = 'None';
         product.services = '';
         product.isCorporate = prodNode.getElementsByTagName('Corporate')[0].getAttribute('IsCorporate') === "true";
@@ -82,9 +84,6 @@ export class ProductsLoadService {
         product.onlyAvailableWith = elem.tagName;
         if (elem.tagName === "Products")
             product.onlyAvailableWithProducts = elem.textContent;
-
-        if (product.excess === product.excessPerPolicy && product.adultsCovered === 2)
-            product.excess = product.excess / 2;
 
         if (product.type !== 'GeneralHealth') {
             product.hospitalTier = prodNode.getElementsByTagName('HospitalTier')[0].textContent;

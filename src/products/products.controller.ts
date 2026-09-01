@@ -5,10 +5,10 @@
  * date: 12-Dec-2024
  */
 
-import { Controller, Get, Header, HttpException, HttpStatus, NotFoundException, Param } from '@nestjs/common';
+import { Controller, Get, Header, NotFoundException, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
-import { ProductsSearchService } from './products.search.service';
+//import { ProductsSearchService } from './products.search.service';
 import { Product } from './entities/product.entity';
 
 /**
@@ -17,7 +17,8 @@ import { Product } from './entities/product.entity';
 @Controller('products')
 export class ProductsController {
 
-    constructor(private readonly productService: ProductsService) {}
+    constructor(private readonly productService: ProductsService) {
+    }
 
     /**
      * Return a single product. Code is split into 2 fields because the
@@ -108,10 +109,20 @@ export class ProductsController {
     }
 
     /**
+     * Return a cache of products
+     */
+    @Get('cache')
+    async getCache() {
+        return this.productService.groups;
+    }
+}
+
+    /**
      * Return a list of matching OPEN products by state/type/adults/dependants.
      * @param state State
      * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
      */
+    /*
     @Get('segment/:state/:cover')
     @ApiOperation({
         summary: 'Return a list OPEN products for a market segment (state and persons covered)',
@@ -142,11 +153,13 @@ export class ProductsController {
             cover[1] === 'D',
         );
     }
+    */
 
     /**
      * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
      * @param fundCode
-     * */
+     */
+    /*
     @Get('fund/:fundCode')
     @ApiOperation({
         summary: 'Return a list of all OPEN products for a single fund.',
@@ -164,11 +177,12 @@ export class ProductsController {
         return this.productService.findByFund(fundCode);
     }
 }
-
+*/
 
 /**
  * **ProductSearchController** provides access to product search.
  */
+/*
 @ApiTags('Product Search')
 @Controller('product-search')
 export class ProductSearchController {
@@ -185,7 +199,7 @@ export class ProductSearchController {
         return this.ProductSearchService.getDataset();
     }
 }
-
+*/
 
 /**
  * **ProductServicesController** provides access to product services.

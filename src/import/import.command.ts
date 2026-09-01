@@ -34,7 +34,8 @@ export class ImportCommand extends CommandRunner {
 
     constructor(
         private readonly importService: ImportService,
-        private readonly systemService: SystemService,)
+        private readonly systemService: SystemService,
+        )
     {
         super()
     }

@@ -5,14 +5,19 @@
  * date: 03-Jan-2025
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
+
+import { ProductGroup, ProductVariant, SerializedProductGroup } from 'phi-common';
+
 import { Product } from 'src/products/entities/product.entity';
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
-import { ProductsCacheService } from './products.cache.service';
+//import { ProductsCacheService } from './products.cache.service';
+import { Interval } from '@nestjs/schedule';
+import { SystemService } from '../system/system.service';
+import { CacheMode, CacheService } from '../cache/cache.service';
 
 
 const LIST_FIELDS = [
@@ -54,7 +59,10 @@ export class ProductsService {
 
     // Latest import time stamp.  Used to determine which products to return from the database.
     private timeStamp = new Date(0);
-    // Array of distinct product names.
+    private productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE || "none") as CacheMode;
+    private productDatasetCacheMode: CacheMode = (process.env.PRODUCT_DATASET_CACHE || "none") as CacheMode;
+    private logger = new Logger(ProductsService.name);
+    groups: SerializedProductGroup[] = [];
 
     constructor(
         @InjectRepository(Product)
@@ -63,8 +71,31 @@ export class ProductsService {
         private readonly healthServiceRepository: Repository<HealthService>,
         @InjectRepository(HospitalTier)
         private readonly hospitalTierRepository: Repository<HospitalTier>,
-        private readonly productCacheService: ProductsCacheService,
-    ) {}
+        //private readonly productCacheService: ProductsCacheService,
+        private readonly systemService: SystemService,
+        private readonly cacheService: CacheService
+    ) {
+        this.updateTimeStamp();
+    }
+
+    /**
+     * Check the last import run time stamp every 15 minutes.  Called directly by the constructor and scheduled by NestJS.
+     * If the time stamp has changed, update the product search tables.
+     */
+    @Interval(15 * 60 * 1000)
+    updateTimeStamp() {
+        this.systemService.get("IMPORT", "LASTRUN", new Date(0).toString()).then(timeStampString => {
+            const timeStamp = new Date(timeStampString);
+            if (this.timeStamp < timeStamp) {
+                this.timeStamp = timeStamp;
+                this.logger.debug(`IMPORT time stamp changed to ${timeStampString}`);
+                this.createProductCache().then(group => {
+                    this.groups = group;
+                    this.logger.debug(`${group.length} product groups loaded.`)
+                });
+            }
+        })
+    }
 
     /**
      * Return a single product.
@@ -145,14 +176,81 @@ export class ProductsService {
         })
     }
 
+    async createProductCache() {
+        const groups: SerializedProductGroup[] = [];
+
+        const rows = await this.productRepository
+            .createQueryBuilder()
+            .select(LIST_FIELDS)
+            .where({ timeStamp: MoreThanOrEqual(this.timeStamp) })
+            .orderBy({
+                'name': 'ASC',
+                'fundCode': 'ASC',
+                'brands': 'ASC',
+                'type': 'ASC',
+                'status': 'ASC',
+                'isCorporate': 'ASC',
+                'accommodationType': 'ASC',
+                'hospitalTier': 'ASC',
+                'onlyAvailableWith': 'ASC',
+                'onlyAvailableWithProducts': 'ASC',
+                'services': 'ASC'
+            })
+            .getRawMany();
+
+        let currentGroup = ProductGroup.createFromObject(rows[0]);
+
+        for (const row of rows) {
+            const group = ProductGroup.createFromObject(row);
+            const variant = ProductVariant.createFromObject(row).serialize();
+
+            if (group.isSameAs(currentGroup)) {
+                currentGroup.addVariant(variant);
+            } else {
+                groups.push(currentGroup.serialize());
+                currentGroup = group;
+                currentGroup.addVariant(variant);
+            }
+        }
+        groups.push(currentGroup.serialize());
+        return groups;
+    }
+
+    async writeProductDatasetCache() {
+        this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
+        if (this.productDatasetCacheMode !== "none") {
+            this.cacheService.writeCache(
+                "products/dataset",
+                this.productDatasetCacheMode,
+                JSON.stringify(await this.createProductCache())
+            );
+        }
+    }
+
     /**
      * Get the XML data for a single product.
      * @param fundCode Fund code.
      * @param productCode Product code.
      */
     async getXml(fundCode: string, productCode: string) {
-        return await this.productCacheService.readProductXmlCache(fundCode, productCode);
+        const baseFileName = `products/xml/${fundCode}/${productCode}`;
+        return await this.cacheService.readCache(baseFileName);
     }
+
+    /**
+     * Write out the product XML cache file according to the PRODUCT_XML_CACHE environment setting. <br>
+     * Note: we ALWAYS write an XML cache - if the setting is `none`, we write the uncompressed version
+     * @param fundCode
+     * @param prodCode
+     * @param data
+     */
+     writeProductXmlCache(fundCode: string, prodCode: string, data: any) {
+         const fileName = `products/xml/${fundCode}/${prodCode}`;
+         if (this.productXmlCacheMode === "none")
+             this.cacheService.writeCache(fileName, "compressed", data);
+         else
+             this.cacheService.writeCache(fileName, this.productXmlCacheMode, data);
+     }
 
     /**
      * Add a health service.  Used by {@link ImportService.run}

@@ -21,10 +21,8 @@ import {pipeline} from 'node:stream/promises';
 import {Injectable} from '@nestjs/common';
 import {Logger} from "@nestjs/common"
 
-import {Fund} from '../funds/entities/fund.entity';
 import {FundsService} from "../funds/funds.service";
 import {ProductsService} from "../products/products.service";
-import {ProductsCacheService} from '../products/products.cache.service';
 import { SystemService } from '../system/system.service';
 import { CacheMode, CacheService } from '../cache/cache.service';
 import { ProductsLoadService } from '../products/products.load.service';
@@ -46,7 +44,6 @@ export class ImportService {
         private readonly fundsService: FundsService,
         private readonly productsService: ProductsService,
         private readonly productLoadService: ProductsLoadService,
-        private readonly productCacheService: ProductsCacheService,
         private readonly systemService: SystemService,
         private readonly cacheService: CacheService,
     ){}
@@ -244,10 +241,12 @@ export class ImportService {
      * Create cache files for product queries.
      */
     async cache() {
-        this.logger.log("Creating products/fund cache...");
-        const funds = (await this.fundsService.findAll() as Fund[]).map(fund=>fund.code);
-        await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
-        this.logger.log("Creating products/segment cache...");
-        await this.productCacheService.cacheProductSegmentQueries(this.productsService.findByMarketSegment.bind(this.productsService))
+        // this.logger.log("Creating products/fund cache...");
+        // const funds = (await this.fundsService.findAll() as Fund[]).map(fund=>fund.code);
+        // await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
+        // this.logger.log("Creating products/segment cache...");
+        // await this.productCacheService.cacheProductSegmentQueries(this.productsService.findByMarketSegment.bind(this.productsService))
+        this.logger.log("Creating products/dataset cache...");
+        await this.productsService.writeProductDatasetCache();
     }
 }

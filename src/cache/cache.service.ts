@@ -9,7 +9,7 @@ import * as zlib from 'node:zlib';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 import { Injectable } from '@nestjs/common';
-import EventEmitter from 'node:events';
+//import EventEmitter from 'node:events';
 
 export type CacheMode = "compressed" | "uncompressed" | "both" | "none";
 

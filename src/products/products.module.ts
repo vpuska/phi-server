@@ -8,22 +8,22 @@
 import { Module } from '@nestjs/common';
 import {TypeOrmModule} from "@nestjs/typeorm";
 
-import { ProductsController, ProductSearchController, ProductServicesController } from './products.controller';
+import { ProductsController, ProductServicesController } from './products.controller';
 import { Product } from "./entities/product.entity";
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
 import { CacheModule } from '../cache/cache.module'
 import { ProductsService } from './products.service';
 import { ProductsLoadService } from './products.load.service';
-import { ProductsCacheService } from './products.cache.service';
-import { ProductsSearchService } from './products.search.service';
+//import { ProductsCacheService } from './products.cache.service';
+//import { ProductsSearchService } from './products.search.service';
 import { SystemModule } from '../system/system.module';
 import { FundsModule } from '../funds/funds.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Product, HealthService, HospitalTier]), FundsModule, CacheModule, SystemModule],
-  exports: [TypeOrmModule, ProductsService, ProductsLoadService, ProductsCacheService, ProductsSearchService],
-  providers: [ProductsService, ProductsLoadService, ProductsCacheService, ProductsSearchService],
-  controllers: [ProductsController, ProductSearchController, ProductServicesController]
+  exports: [TypeOrmModule, ProductsService, ProductsLoadService],
+  providers: [ProductsService, ProductsLoadService],
+  controllers: [ProductsController, ProductServicesController]
 })
 export class ProductsModule {}

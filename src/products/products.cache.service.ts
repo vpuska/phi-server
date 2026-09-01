@@ -7,15 +7,15 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { CacheService, CacheMode } from '../cache/cache.service';
-import { AUS_STATES } from 'phi-common';
+//import { AUS_STATES } from 'phi-common';
 
 @Injectable()
 export class ProductsCacheService {
 
     productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE || "none") as CacheMode;
-    productFundCacheMode: CacheMode = (process.env.PRODUCT_FUND_CACHE || "none") as CacheMode;
-    //TODO: change to PRODUCT_SEGMENT_CACHE
-    productSearchCacheMode: CacheMode = (process.env.PRODUCT_SEARCH_CACHE || "none") as CacheMode;
+    // productFundCacheMode: CacheMode = (process.env.PRODUCT_FUND_CACHE || "none") as CacheMode;
+    productDatasetCacheMode: CacheMode = (process.env.PRODUCT_DATASET_CACHE || "none") as CacheMode;
+    // productSearchCacheMode: CacheMode = (process.env.PRODUCT_SEARCH_CACHE || "none") as CacheMode;
 
     logger = new Logger('ProductsCacheService');
 
@@ -49,6 +49,22 @@ export class ProductsCacheService {
         return await this.cacheService.readCache(baseFileName);
     }
 
+    /**
+     * Write out the product dataset cache file according to the PRODUCT_DATASET_CACHE environment setting.
+     * @param queryFunction The ProductsService method to query the product dataset.
+     */
+    async writeProductDatasetCache(queryFunction: () => any) {
+        this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
+        if (this.productDatasetCacheMode !== "none") {
+            this.cacheService.writeCache(
+                "products/dataset",
+                this.productDatasetCacheMode,
+                JSON.stringify(await queryFunction())
+            );
+        }
+    }
+
+    /*
     async cacheProductFundQueries(funds: string[], queryFunction: (fundCode: string) => any) {
         this.logger.log(`PRODUCT_FUND_CACHE=${this.productFundCacheMode}`);
         if (this.productFundCacheMode !== "none") {
@@ -76,4 +92,5 @@ export class ProductsCacheService {
                             )
 
     }
+    */
 }
