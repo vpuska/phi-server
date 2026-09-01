@@ -38,8 +38,12 @@ export class CacheService {
         const fileName = `${this.cacheDirectory}/${name}`;
         const dir = path.dirname(fileName);
 
+        console.log(fileName, dir);
+
         if (!fs.existsSync(dir))
             fs.mkdirSync(dir, { recursive: true });
+
+        console.log("writeCache");
 
         if (data instanceof Object && 'pipe' in data) {
 
