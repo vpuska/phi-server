@@ -4,7 +4,7 @@
  * author: V. Puska
  * date: 03-Jan-2025
  */
-
+import { Readable } from 'stream';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
@@ -218,11 +218,12 @@ export class ProductsService {
 
     async writeProductDatasetCache() {
         this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
+        const dataset = JSON.stringify(await this.createProductCache());
         if (this.productDatasetCacheMode !== "none") {
             this.cacheService.writeCache(
                 "products/dataset",
                 this.productDatasetCacheMode,
-                JSON.stringify(await this.createProductCache())
+                Readable.from([dataset], {objectMode: false})
             );
         }
     }
