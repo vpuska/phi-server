@@ -5,7 +5,13 @@
  * date: 12-Dec-2024
  */
 
-import { Controller, Get, Header, NotFoundException, Param } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Header,
+    NotFoundException,
+    Param,
+} from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 //import { ProductsSearchService } from './products.search.service';
@@ -16,9 +22,7 @@ import { Product } from './entities/product.entity';
  */
 @Controller('products')
 export class ProductsController {
-
-    constructor(private readonly productService: ProductsService) {
-    }
+    constructor(private readonly productService: ProductsService) {}
 
     /**
      * Return a single product. Code is split into 2 fields because the
@@ -31,7 +35,8 @@ export class ProductsController {
     @Header('content-type', 'application/json')
     @ApiOperation({
         summary: 'Return a single product.',
-        description: 'Returns a single product using the fund code and product code.',
+        description:
+            'Returns a single product using the fund code and product code.',
     })
     @ApiParam({
         name: 'fundCode',
@@ -56,11 +61,15 @@ export class ProductsController {
         @Param('code1') code1: string,
         @Param('code2') code2: string,
     ): Promise<Product> {
-        const product = await this.productService.findOne(fundCode, `${code1}/${code2}`);
-        if (product)
-            return product;
+        const product = await this.productService.findOne(
+            fundCode,
+            `${code1}/${code2}`,
+        );
+        if (product) return product;
         else
-            throw new NotFoundException(`Product ${fundCode}/${code1}/${code2} not found.`);
+            throw new NotFoundException(
+                `Product ${fundCode}/${code1}/${code2} not found.`,
+            );
     }
 
     /**
@@ -101,9 +110,11 @@ export class ProductsController {
         @Param('code1') code1: string,
         @Param('code2') code2: string,
     ) {
-        const product = await this.productService.getXml(fundCode, `${code1}/${code2}`)
-        if (product)
-            return product;
+        const product = await this.productService.getXml(
+            fundCode,
+            `${code1}/${code2}`,
+        );
+        if (product) return product;
         else
             throw new NotFoundException(`Product ${code1}/${code2} not found.`);
     }
@@ -117,12 +128,12 @@ export class ProductsController {
     }
 }
 
-    /**
-     * Return a list of matching OPEN products by state/type/adults/dependants.
-     * @param state State
-     * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
-     */
-    /*
+/**
+ * Return a list of matching OPEN products by state/type/adults/dependants.
+ * @param state State
+ * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
+ */
+/*
     @Get('segment/:state/:cover')
     @ApiOperation({
         summary: 'Return a list OPEN products for a market segment (state and persons covered)',
@@ -155,11 +166,11 @@ export class ProductsController {
     }
     */
 
-    /**
-     * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
-     * @param fundCode
-     */
-    /*
+/**
+ * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
+ * @param fundCode
+ */
+/*
     @Get('fund/:fundCode')
     @ApiOperation({
         summary: 'Return a list of all OPEN products for a single fund.',
@@ -222,5 +233,4 @@ export class ProductServicesController {
     serviceList() {
         return this.productService.serviceList();
     }
-
 }

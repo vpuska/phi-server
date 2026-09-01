@@ -8,14 +8,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 
-import {System} from './entities/system.entity';
+import { System } from './entities/system.entity';
 
 /**
  * Service to manage the {@Link System} control records.
  */
 @Injectable()
 export class SystemService {
-
     constructor(
         @InjectRepository(System)
         private readonly systemRepository: Repository<System>,
@@ -31,7 +30,7 @@ export class SystemService {
         return await this.systemRepository.save({
             key1: key1,
             key2: key2,
-            data: data
+            data: data,
         });
     }
 
@@ -45,16 +44,18 @@ export class SystemService {
             where: {
                 key1: key1,
                 key2: key2,
-            }
-        })
+            },
+        });
     }
 
     /**
      * Find {@Link System} records matching search options.
      * @param where
      */
-    async findAll(where:  FindOptionsWhere<System> | FindOptionsWhere<System>[]) {
-        return await this.systemRepository.find({where})
+    async findAll(
+        where: FindOptionsWhere<System> | FindOptionsWhere<System>[],
+    ) {
+        return await this.systemRepository.find({ where });
     }
 
     /**
@@ -63,10 +64,12 @@ export class SystemService {
      * @param key2
      * @param defaultValue
      */
-    async get(key1: string, key2: string, defaultValue: string) : Promise<string> {
+    async get(
+        key1: string,
+        key2: string,
+        defaultValue: string,
+    ): Promise<string> {
         const record = await this.findOne(key1, key2);
         return record ? record.data : defaultValue;
     }
-
 }
-

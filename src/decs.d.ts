@@ -1,1 +1,1 @@
-declare module "xtreamer";
+declare module 'xtreamer';

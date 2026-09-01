@@ -5,8 +5,15 @@
  * date: 05-Jan-25
  */
 
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
-import {Fund} from "../../funds/entities/fund.entity";
+import {
+    Entity,
+    Column,
+    PrimaryColumn,
+    ManyToOne,
+    JoinColumn,
+    Index,
+} from 'typeorm';
+import { Fund } from '../../funds/entities/fund.entity';
 import { HospitalTier } from './hospital-tier.entity';
 
 /**
@@ -15,109 +22,109 @@ import { HospitalTier } from './hospital-tier.entity';
  * in the table.  All other information needs to be extracted from the product XML in the `product.xml`
  * field.
  */
-@Entity({name: 'products'})
+@Entity({ name: 'products' })
 @Index(['state', 'adultsCovered', 'childCover'])
 export class Product {
-    @PrimaryColumn({length:3})
+    @PrimaryColumn({ length: 3 })
     fundCode: string;
 
-    @PrimaryColumn({length:16})
+    @PrimaryColumn({ length: 16 })
     code: string;
 
     @ManyToOne(() => Fund, (fund) => fund.code, {
         createForeignKeyConstraints: true,
         onDelete: 'CASCADE',
     })
-    @JoinColumn({name:'fundCode'})
+    @JoinColumn({ name: 'fundCode' })
     fund: Fund;
 
-    @Column({length:32})
+    @Column({ length: 32 })
     fundBrandCode: string;
 
-    @Column({length:64})
+    @Column({ length: 64 })
     name: string;
 
-    @Column({length:16})
-    type: string;  // Hospital, GeneralHealth, Combined
+    @Column({ length: 16 })
+    type: string; // Hospital, GeneralHealth, Combined
 
-    @Column({length:8})
-    status: string;  // Open, Closed, Orphaned
+    @Column({ length: 8 })
+    status: string; // Open, Closed, Orphaned
 
-    @Column({length:16, nullable:true})
+    @Column({ length: 16, nullable: true })
     onlyAvailableWith: string; // NotApplicable, AnyHospital, AnyGeneralHealth, Products
 
-    @Column({length:256, nullable:true})
+    @Column({ length: 256, nullable: true })
     onlyAvailableWithProducts: string;
 
-    @Column({length:3})
+    @Column({ length: 3 })
     state: string;
 
-    @Column({default:false})
+    @Column({ default: false })
     isCorporate: boolean;
 
-    @Column({length:32, nullable:true})
+    @Column({ length: 32, nullable: true })
     brands: string;
 
-    @Column({type:'int', default:0})
+    @Column({ type: 'int', default: 0 })
     adultsCovered: number;
 
     // childCover || studentCover || youngAdultCover || disabilityCover
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     dependantCover: boolean;
 
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     childCover: boolean;
 
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     studentCover: boolean;
 
     // nonClassifiedCover || nonStudentCover || conditionalNonStudentCover
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     youngAdultCover: boolean;
 
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     nonClassifiedCover: boolean;
 
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     nonStudentCover: boolean;
 
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     conditionalNonStudentCover: boolean;
 
-    @Column({type:'boolean', default: false})
+    @Column({ type: 'boolean', default: false })
     disabilityCover: boolean;
 
-    @Column({type:'integer', default:0})
+    @Column({ type: 'integer', default: 0 })
     excess: number;
 
-    @Column({type:'integer', default:0})
+    @Column({ type: 'integer', default: 0 })
     excessPerAdmission: number;
 
-    @Column({type:'integer', default:0})
+    @Column({ type: 'integer', default: 0 })
     excessPerPerson: number;
 
-    @Column({type:'integer', default:0})
+    @Column({ type: 'integer', default: 0 })
     excessPerPolicy: number;
 
-    @Column({type:'decimal', default:0})
+    @Column({ type: 'decimal', default: 0 })
     premium: number;
 
-    @Column({type:'decimal', default:0})
+    @Column({ type: 'decimal', default: 0 })
     hospitalComponent: number;
 
-    @Column({length:16, nullable:true})
+    @Column({ length: 16, nullable: true })
     hospitalTier: string;
 
-    @Column({ length:64, nullable:true})
+    @Column({ length: 64, nullable: true })
     accommodationType: string;
 
-    @Column({length:512})
+    @Column({ length: 512 })
     services: string;
 
-    @Column({type:'datetime', default:0})
+    @Column({ type: 'datetime', default: 0 })
     timeStamp: Date;
 
     @ManyToOne(() => HospitalTier, (tier) => tier.tier, {})
-    @JoinColumn({name:'hospitalTier'})
+    @JoinColumn({ name: 'hospitalTier' })
     hospitalTierTable: HospitalTier;
 }

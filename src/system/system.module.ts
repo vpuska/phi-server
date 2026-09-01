@@ -10,11 +10,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { System } from './entities/system.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([System])],
-  providers: [SystemService],
-  exports: [TypeOrmModule, SystemService],
+    imports: [TypeOrmModule.forFeature([System])],
+    providers: [SystemService],
+    exports: [TypeOrmModule, SystemService],
 })
-export class SystemModule {
-
-
-}
+export class SystemModule {}

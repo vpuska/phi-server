@@ -8,12 +8,11 @@ import { FundsService } from './funds.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { CacheService } from '../cache/cache.service';
 
-
 @Controller('')
 export class FundController {
     constructor(
         private readonly fundsService: FundsService,
-        private readonly cacheService: CacheService
+        private readonly cacheService: CacheService,
     ) {}
 
     /**
@@ -28,7 +27,7 @@ export class FundController {
         return this.fundsService.findAll();
     }
 
-    @Get("fund-brands")
+    @Get('fund-brands')
     @ApiOperation({
         summary: 'Return all fund brand records.',
         description: `Return all **fund-brand** records`,
@@ -37,13 +36,14 @@ export class FundController {
         return this.fundsService.findAllFundBrands();
     }
 
-    @Get("fund-xml")
+    @Get('fund-xml')
     @Header('content-type', 'application/xml')
     @ApiOperation({
         summary: 'Returns all fund details in XML format.',
-        description: 'Returns the XML fund package downloaded from data.gov.au.'
+        description:
+            'Returns the XML fund package downloaded from data.gov.au.',
     })
     async findXML() {
-        return await this.cacheService.readCache("funds/xml")
+        return await this.cacheService.readCache('funds/xml');
     }
 }

@@ -4,20 +4,19 @@
  * @author V.Puska
  * @date: 05-Jan-25
  */
-import { Entity, Column, PrimaryColumn} from 'typeorm';
-
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 /**
  * System entity.
  */
-@Entity({name: 'system'})
+@Entity({ name: 'system' })
 export class System {
-    @PrimaryColumn({length:64})
+    @PrimaryColumn({ length: 64 })
     key1: string;
 
-    @PrimaryColumn({length:256, default: ""})
+    @PrimaryColumn({ length: 256, default: '' })
     key2: string;
 
-    @Column({length:256})
+    @Column({ length: 256 })
     data: string;
 }
