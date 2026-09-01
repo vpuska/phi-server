@@ -218,6 +218,7 @@ export class ProductsService {
 
     async writeProductDatasetCache() {
         this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
+        console.log("writeProductDataset");
         const dataset = JSON.stringify(await this.createProductCache());
         console.log("writeProductDataset");
         if (this.productDatasetCacheMode !== "none") {
