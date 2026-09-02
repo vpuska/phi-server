@@ -18,6 +18,7 @@ import { HospitalTier } from './entities/hospital-tier.entity';
 import { Interval } from '@nestjs/schedule';
 import { SystemService } from '../system/system.service';
 import { CacheMode, CacheService } from '../cache/cache.service';
+import { Readable } from 'stream';
 
 
 const LIST_FIELDS = [
@@ -50,6 +51,31 @@ const LIST_FIELDS = [
     'accommodationType',
     'services',
 ];
+
+
+/**
+ * Convert data into a Readable JSON stream.
+ * Arrays are yielded item by item to prevent large memory allocations.
+ * @param data The data to convert to a JSON readable stream.
+ */
+export function jsonStream(data: any): Readable {
+    if (Array.isArray(data)) {
+        console.log("Records =", data.length)
+        function* generate() {
+            yield '[';
+            for (let i = 0; i < data.length; i++) {
+                if (i > 0) {
+                    yield ',';
+                }
+                console.log("yield", i)
+                yield JSON.stringify(data[i]);
+            }
+            yield ']';
+        }
+        return Readable.from(generate(), { objectMode: false });
+    }
+    return Readable.from([JSON.stringify(data)], { objectMode: false });
+}
 
 /**
  * **ProductService**

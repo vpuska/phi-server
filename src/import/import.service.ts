@@ -246,7 +246,7 @@ export class ImportService {
         // await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
         // this.logger.log("Creating products/segment cache...");
         // await this.productCacheService.cacheProductSegmentQueries(this.productsService.findByMarketSegment.bind(this.productsService))
-        this.logger.log("Creating products/dataset cache...");
-        await this.productsService.writeProductDatasetCache();
+        // this.logger.log("Creating products/dataset cache...");
+        // await this.productsService.writeProductDatasetCache();
     }
 }
