@@ -124,7 +124,7 @@ export class ProductsController {
      */
     @Get('cache')
     async getCache() {
-        return this.productService.groups;
+        return this.productService.streamProductCache();
     }
 }
 

@@ -5,23 +5,19 @@
  * date: 03-Jan-2025
  */
 import { Readable } from 'stream';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
 
-import {
-    ProductGroup,
-    ProductVariant,
-    SerializedProductGroup,
-} from 'phi-common';
+import { ProductGroup, ProductVariant, SerializedProductGroup } from 'phi-common';
 
 import { Product } from './entities/product.entity';
 import { HealthService } from './entities/health-service.entity';
 import { HospitalTier } from './entities/hospital-tier.entity';
-//import { ProductsCacheService } from './products.cache.service';
 import { Interval } from '@nestjs/schedule';
 import { SystemService } from '../system/system.service';
 import { CacheMode, CacheService } from '../cache/cache.service';
+import { createReadStream } from 'node:fs';
 
 const LIST_FIELDS = [
     'code',
@@ -61,22 +57,18 @@ const LIST_FIELDS = [
  * @param data The data to convert to a JSON readable stream.
  */
 export function jsonStream(data: any): Readable {
-    if (Array.isArray(data)) {
-        console.log("Records =", data.length)
-        function* generate() {
-            yield '[';
-            for (let i = 0; i < data.length; i++) {
-                if (i > 0) {
-                    yield ',';
-                }
-                console.log("yield", i)
-                yield JSON.stringify(data[i]);
+    console.log("Records =", data.length)
+    function* generate() {
+        yield '[';
+        for (let i = 0; i < data.length; i++) {
+            if (i > 0) {
+                yield ',';
             }
-            yield ']';
+            yield JSON.stringify(data[i]);
         }
-        return Readable.from(generate(), { objectMode: false });
+        yield ']';
     }
-    return Readable.from([JSON.stringify(data)], { objectMode: false });
+    return Readable.from(generate(), { objectMode: false });
 }
 
 
@@ -110,7 +102,6 @@ export class ProductsService {
 
     /**
      * Check the last import run time stamp every 15 minutes.  Called directly by the constructor and scheduled by NestJS.
-     * If the time stamp has changed, update the product search tables.
      */
     @Interval(15 * 60 * 1000)
     updateTimeStamp() {
@@ -123,12 +114,6 @@ export class ProductsService {
                     this.logger.debug(
                         `IMPORT time stamp changed to ${timeStampString}`,
                     );
-                    this.createProductCache().then((group) => {
-                        this.groups = group;
-                        this.logger.debug(
-                            `${group.length} product groups loaded.`,
-                        );
-                    });
                 }
             });
     }
@@ -216,9 +201,8 @@ export class ProductsService {
     }
 
     async createProductCache() {
-        const groups: SerializedProductGroup[] = [];
+        //const groups: SerializedProductGroup[] = [];
 
-        /*
         const rows = await this.productRepository.find({
             select: LIST_FIELDS as FindOptionsSelect<Product>,
             where: {
@@ -239,36 +223,45 @@ export class ProductsService {
             }
         });
 
-        let currentGroup = ProductGroup.createFromObject(rows[0]);
-
-        for (const row of rows) {
-            const group = ProductGroup.createFromObject(row);
-            const variant = ProductVariant.createFromObject(row).serialize();
-
-            if (group.isSameAs(currentGroup)) {
-                currentGroup.addVariant(variant);
-            } else {
-                groups.push(currentGroup.serialize());
-                currentGroup = group;
-                currentGroup.addVariant(variant);
+        function* generate() {
+            yield '[';
+            let currentGroup = ProductGroup.createFromObject(rows[0]);
+            let comma = '';
+            for (let i = 0; i < rows.length; i++) {
+                const group = ProductGroup.createFromObject(rows[i]);
+                const variant = ProductVariant.createFromObject(rows[i]).serialize();
+                if (group.isSameAs(currentGroup)) {
+                    currentGroup.addVariant(variant);
+                } else {
+                    yield comma;
+                    yield JSON.stringify(currentGroup.serialize());
+                    comma = ',';
+                    currentGroup = group;
+                    currentGroup.addVariant(variant);
+                }
             }
+            yield ']';
         }
-        groups.push(currentGroup.serialize());
-        */
-        return groups;
 
-    }
-
-    async writeProductDatasetCache() {
         this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
-        const dataset = jsonStream(await this.createProductCache());
         if (this.productDatasetCacheMode !== 'none') {
             this.cacheService.writeCache(
                 'products/dataset',
                 this.productDatasetCacheMode,
-                dataset,
+                Readable.from(generate(), { objectMode: false })
             );
         }
+    }
+
+    streamProductCache() {
+        const cacheDirectory = process.env.CACHE_DIR || 'cache';
+        const file = createReadStream(`${cacheDirectory}/products/dataset`);
+        return new StreamableFile(file, {
+            type: 'application/json',
+            disposition: 'inline',
+            // If you want to define the Content-Length value to another value instead of file's length:
+            // length: 123,
+        });
     }
 
     /**
