@@ -7,16 +7,16 @@
 import { Module } from '@nestjs/common';
 
 import { ImportService } from './import.service';
-import { ProductsModule } from "../products/products.module";
-import { FundsModule } from "../funds/funds.module";
-import { CacheModule } from "../cache/cache.module";
+import { ProductsModule } from '../products/products.module';
+import { FundsModule } from '../funds/funds.module';
+import { CacheModule } from '../cache/cache.module';
 import { SystemModule } from '../system/system.module';
 import { ImportCommand } from './import.command';
 
 @Module({
-  imports: [ProductsModule, FundsModule, CacheModule, SystemModule],
-  providers: [ImportService, ImportCommand ],
-  exports: [ ImportCommand],
+    imports: [ProductsModule, FundsModule, CacheModule, SystemModule],
+    providers: [ImportService, ImportCommand],
+    exports: [ImportCommand],
 })
 /**
  * **ImportModule**

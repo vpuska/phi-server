@@ -1,9 +1,14 @@
-import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
+import {
+    CallHandler,
+    ExecutionContext,
+    Injectable,
+    Logger,
+    NestInterceptor,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 @Injectable()
 export class AppLoggingInterceptor implements NestInterceptor {
-
     private readonly logger = new Logger(this.constructor.name);
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {

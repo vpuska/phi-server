@@ -9,12 +9,9 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-
-    constructor() {
-    }
+    constructor() {}
 
     root(): string {
         return 'Hello from phi-demo-server!';
     }
-
 }

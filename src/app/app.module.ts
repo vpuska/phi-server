@@ -8,13 +8,13 @@
  */
 import { DynamicModule, Module, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from "@nestjs/config";
-import * as process from "node:process";
+import { ConfigModule } from '@nestjs/config';
+import * as process from 'node:process';
 
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import { CommandFactory } from 'nest-commander';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ScheduleModule} from '@nestjs/schedule';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -48,34 +48,33 @@ const API_DESCRIPTION = `
     private health insurance products.  Please use <a href='https://www.privatehealth.gov.au/'>https://www.privatehealth.gov.au/</a>
     or one of the commercial product comparison services.
 </p>
-`
-
+`;
 
 /**
  * Factory function to create the `TypeOrmModule` for the application.
  */
 function typeOrmSettings(): DynamicModule {
-    const type: string = process.env.DATABASE || "SQLITE";
-    if (type==='MARIADB') {
+    const type: string = process.env.DATABASE || 'SQLITE';
+    if (type === 'MARIADB') {
         return TypeOrmModule.forRoot({
             type: 'mariadb',
-            host: process.env["MARIADB_HOST"] || 'localhost',
-            port: parseInt(process.env["MARIADB_PORT"]) || 3307,
-            database: process.env["MARIADB_DATABASE"],
-            username: process.env["MARIADB_USERNAME"],
-            password: process.env["MARIADB_PASSWORD"],
+            host: process.env['MARIADB_HOST'] || 'localhost',
+            port: parseInt(process.env['MARIADB_PORT']) || 3307,
+            database: process.env['MARIADB_DATABASE'],
+            username: process.env['MARIADB_USERNAME'],
+            password: process.env['MARIADB_PASSWORD'],
             autoLoadEntities: true,
             synchronize: true,
-        })
+        });
     }
-    if (type==='SQLITE') {
-        const dbname = process.env['DATABASE_NAME'] || "database.sqlite3"
+    if (type === 'SQLITE') {
+        const dbname = process.env['DATABASE_NAME'] || 'database.sqlite3';
         return TypeOrmModule.forRoot({
             type: 'better-sqlite3',
             database: dbname,
             autoLoadEntities: true,
             synchronize: true,
-        })
+        });
     }
     throw `Invalid database type: ${type}`;
 }
@@ -94,7 +93,10 @@ function typeOrmSettings(): DynamicModule {
         SystemModule,
     ],
     controllers: [AppController],
-    providers: [AppService, {provide: APP_INTERCEPTOR, useClass: AppLoggingInterceptor} ],
+    providers: [
+        AppService,
+        { provide: APP_INTERCEPTOR, useClass: AppLoggingInterceptor },
+    ],
     exports: [AppService],
 })
 export class AppModule {
@@ -102,10 +104,11 @@ export class AppModule {
      * Run the main web service.
      */
     static async run_app_server() {
-
         const app = await NestFactory.create(AppModule, {
             // @ts-ignore
-            logger: (process.env.LOG_LEVEL || "debug,log,warn,error,fatal").split(","),
+            logger: (
+                process.env.LOG_LEVEL || 'debug,log,warn,error,fatal'
+            ).split(','),
         });
 
         const config = new DocumentBuilder()
@@ -113,17 +116,23 @@ export class AppModule {
             .setDescription(API_DESCRIPTION)
             .setVersion('1.0')
             .build();
-        SwaggerModule.setup('swagger', app, SwaggerModule.createDocument(app, config));
+        SwaggerModule.setup(
+            'swagger',
+            app,
+            SwaggerModule.createDocument(app, config),
+        );
 
         app.enableCors({
             origin: true,
-            methods: ['GET', 'POST']
+            methods: ['GET', 'POST'],
         });
-        app.useGlobalPipes(new ValidationPipe({
-            transform: true,
-            whitelist: true,
-            forbidNonWhitelisted: true
-        }));
+        app.useGlobalPipes(
+            new ValidationPipe({
+                transform: true,
+                whitelist: true,
+                forbidNonWhitelisted: true,
+            }),
+        );
 
         await app.listen(process.env.PORT ?? 3000);
     }
@@ -132,6 +141,6 @@ export class AppModule {
      * Run the command factory.
      */
     static async run_commander() {
-        await CommandFactory.run(AppModule, ["error", "warn", "fatal"])
+        await CommandFactory.run(AppModule, ['error', 'warn', 'fatal']);
     }
 }

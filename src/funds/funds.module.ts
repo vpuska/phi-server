@@ -5,10 +5,10 @@
  * @date 01-Dec-2024
  */
 import { Module } from '@nestjs/common';
-import {TypeOrmModule} from "@nestjs/typeorm";
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { FundsService } from './funds.service';
-import { Fund } from "./entities/fund.entity";
-import { FundBrand } from "./entities/fund-brand.entity";
+import { Fund } from './entities/fund.entity';
+import { FundBrand } from './entities/fund-brand.entity';
 import { FundController } from './funds.controller';
 import { CacheModule } from '../cache/cache.module';
 
@@ -18,5 +18,4 @@ import { CacheModule } from '../cache/cache.module';
     providers: [FundsService],
     controllers: [FundController],
 })
-
 export class FundsModule {}

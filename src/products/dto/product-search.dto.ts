@@ -8,35 +8,37 @@
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-
 const HOSPITAL_TIERS = [
-    "Basic", "BasicPlus", "Bronze", "BronzePlus", "Silver", "SilverPlus", "Gold"
+    'Basic',
+    'BasicPlus',
+    'Bronze',
+    'BronzePlus',
+    'Silver',
+    'SilverPlus',
+    'Gold',
 ];
 
-const STATES = [
-    "NSW", "ACT", "VIC", "QLD", "TAS", "SA", "WA", "NT"
-]
+const STATES = ['NSW', 'ACT', 'VIC', 'QLD', 'TAS', 'SA', 'WA', 'NT'];
 
 /**
  * ProductSearchDto - body for the products search API.
  */
 export class ProductSearchDto {
-
     @ApiProperty({
         type: String,
         required: true,
         enum: STATES,
-        description: "State of residence."
+        description: 'State of residence.',
     })
     @IsString()
     @IsIn(STATES)
-    state: "NSW" | "ACT" | "VIC" | "QLD" | "TAS" | "SA" | "WA" | "NT";
+    state: 'NSW' | 'ACT' | 'VIC' | 'QLD' | 'TAS' | 'SA' | 'WA' | 'NT';
 
     @ApiProperty({
         type: Number,
         required: true,
         enum: [0, 1, 2],
-        description: "Number of adults to be covered by the product."
+        description: 'Number of adults to be covered by the product.',
     })
     @IsInt()
     @IsIn([0, 1, 2])
@@ -45,7 +47,7 @@ export class ProductSearchDto {
     @ApiProperty({
         type: Boolean,
         required: true,
-        description: "Search for *hospital* products."
+        description: 'Search for *hospital* products.',
     })
     @IsBoolean()
     hospitalCover: boolean;
@@ -53,7 +55,7 @@ export class ProductSearchDto {
     @ApiProperty({
         type: Boolean,
         required: true,
-        description: "Search for *General Medical* products."
+        description: 'Search for *General Medical* products.',
     })
     @IsBoolean()
     generalCover: boolean;
@@ -61,8 +63,8 @@ export class ProductSearchDto {
     @ApiProperty({
         type: String,
         required: false,
-        description: "Select the minimum tier for *Hospital* products.",
-        enum: HOSPITAL_TIERS
+        description: 'Select the minimum tier for *Hospital* products.',
+        enum: HOSPITAL_TIERS,
     })
     @IsString()
     @IsIn(HOSPITAL_TIERS)
@@ -73,41 +75,40 @@ export class ProductSearchDto {
         type: Boolean,
         required: false,
         default: false,
-        description: "Only include products with *child* dependant cover."
+        description: 'Only include products with *child* dependant cover.',
     })
     @IsBoolean()
     @IsOptional()
-    childCover? : boolean;
+    childCover?: boolean;
 
     @ApiProperty({
         type: Boolean,
         required: false,
         default: false,
-        description: "Only include products with *student* dependant cover."
+        description: 'Only include products with *student* dependant cover.',
     })
     @IsBoolean()
     @IsOptional()
-    studentCover? : boolean;
+    studentCover?: boolean;
 
     @ApiProperty({
         type: Boolean,
         required: false,
         default: false,
-        description: "Only include products with *young adult* dependant cover."
+        description:
+            'Only include products with *young adult* dependant cover.',
     })
     @IsBoolean()
     @IsOptional()
-    youngAdultCover? : boolean;
+    youngAdultCover?: boolean;
 
     @ApiProperty({
         type: Boolean,
         required: false,
         default: false,
-        description: "Only include products with *disabled* dependant cover."
+        description: 'Only include products with *disabled* dependant cover.',
     })
     @IsBoolean()
     @IsOptional()
-    disabilityCover? : boolean;
-
-
+    disabilityCover?: boolean;
 }

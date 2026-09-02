@@ -11,17 +11,16 @@ import { CacheService, CacheMode } from '../cache/cache.service';
 
 @Injectable()
 export class ProductsCacheService {
-
-    productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE || "none") as CacheMode;
+    productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE ||
+        'none') as CacheMode;
     // productFundCacheMode: CacheMode = (process.env.PRODUCT_FUND_CACHE || "none") as CacheMode;
-    productDatasetCacheMode: CacheMode = (process.env.PRODUCT_DATASET_CACHE || "none") as CacheMode;
+    productDatasetCacheMode: CacheMode = (process.env.PRODUCT_DATASET_CACHE ||
+        'none') as CacheMode;
     // productSearchCacheMode: CacheMode = (process.env.PRODUCT_SEARCH_CACHE || "none") as CacheMode;
 
     logger = new Logger('ProductsCacheService');
 
-    constructor(
-        private readonly cacheService: CacheService,
-    ) {}
+    constructor(private readonly cacheService: CacheService) {}
 
     /**
      * Write out the product XML cache file according to the PRODUCT_XML_CACHE environment setting. <br>
@@ -33,10 +32,14 @@ export class ProductsCacheService {
     writeProductXmlCache(fundCode: string, prodCode: string, data: any) {
         const fileName = `products/xml/${fundCode}/${prodCode}`;
 
-        if (this.productXmlCacheMode === "none")
-            this.cacheService.writeCache(fileName, "compressed", data);
+        if (this.productXmlCacheMode === 'none')
+            this.cacheService.writeCache(fileName, 'compressed', data);
         else
-            this.cacheService.writeCache(fileName, this.productXmlCacheMode, data);
+            this.cacheService.writeCache(
+                fileName,
+                this.productXmlCacheMode,
+                data,
+            );
     }
 
     /**
@@ -54,12 +57,14 @@ export class ProductsCacheService {
      * @param queryFunction The ProductsService method to query the product dataset.
      */
     async writeProductDatasetCache(queryFunction: () => any) {
-        this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
-        if (this.productDatasetCacheMode !== "none") {
+        this.logger.log(
+            `PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`,
+        );
+        if (this.productDatasetCacheMode !== 'none') {
             this.cacheService.writeCache(
-                "products/dataset",
+                'products/dataset',
                 this.productDatasetCacheMode,
-                JSON.stringify(await queryFunction())
+                JSON.stringify(await queryFunction()),
             );
         }
     }
