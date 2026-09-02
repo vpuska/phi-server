@@ -251,6 +251,9 @@ export class ProductsService {
                 currentGroup = group;
                 currentGroup.addVariant(variant);
             }
+            // temporary limit for testing
+            if (groups.length > 1000)
+                break;
         }
         groups.push(currentGroup.serialize());
         return groups;
