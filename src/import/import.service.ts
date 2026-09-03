@@ -238,15 +238,10 @@ export class ImportService {
     }
 
     /**
-     * Create cache files for product queries.
+     * Create cache files for the product dataset.
      */
     async cache() {
-        // this.logger.log("Creating products/fund cache...");
-        // const funds = (await this.fundsService.findAll() as Fund[]).map(fund=>fund.code);
-        // await this.productCacheService.cacheProductFundQueries(funds, this.productsService.findByFund.bind(this.productsService))
-        // this.logger.log("Creating products/segment cache...");
-        // await this.productCacheService.cacheProductSegmentQueries(this.productsService.findByMarketSegment.bind(this.productsService))
         this.logger.log("Creating products/dataset cache...");
-        await this.productsService.createProductCache();
+        await this.productsService.createProductDataset();
     }
 }

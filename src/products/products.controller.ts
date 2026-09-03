@@ -25,6 +25,20 @@ export class ProductsController {
     constructor(private readonly productService: ProductsService) {}
 
     /**
+     * Return the product dataset.  The dataset in a complete list of products serialized into JSON arrays.
+     */
+    @Get('dataset')
+    @Header('content-type', 'application/json')
+    @ApiOperation({
+        summary: 'Returns the complete product dataset.',
+        description:
+            'Returns the complete product dataset serialised an array of product groups.  Each product group represents a distinct product title.',
+    })
+    async getDataset() {
+        return this.productService.streamProductDataset();
+    }
+
+    /**
      * Return a single product. Code is split into 2 fields because the
      * product code includes the `/` character.  EG `I119/WNDI2D`
      * @param fundCode - The fund for this product.  EG. `HIF`
@@ -118,99 +132,7 @@ export class ProductsController {
         else
             throw new NotFoundException(`Product ${code1}/${code2} not found.`);
     }
-
-    /**
-     * Return a cache of products
-     */
-    @Get('cache')
-    async getCache() {
-        return this.productService.streamProductCache();
-    }
 }
-
-/**
- * Return a list of matching OPEN products by state/type/adults/dependants.
- * @param state State
- * @param cover `1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included
- */
-/*
-    @Get('segment/:state/:cover')
-    @ApiOperation({
-        summary: 'Return a list OPEN products for a market segment (state and persons covered)',
-        description: 'Return a list OPEN products for a market segment (state and persons covered)',
-    })
-    @ApiParam({
-        name: 'state',
-        description: 'State of residence.',
-        example: 'NSW',
-        required: true,
-    })
-    @ApiParam({
-        name: 'cover',
-        description: '`1 | 2 | 0D | 1D | 2D` - code representing number of adults and if dependants included',
-        example: '1D',
-        required: true,
-    })
-    list(
-        @Param('state') state: string,
-        @Param('cover') cover: string,
-    ) {
-        if (!["1", "2", "0D", "1D", "2D"].includes(cover)) {
-            throw new HttpException(`Invalid Cover Code - ${cover}`, HttpStatus.BAD_REQUEST);
-        }
-        return this.productService.findByMarketSegment(
-            state,
-            +cover[0] as 0 | 1 | 2,
-            cover[1] === 'D',
-        );
-    }
-    */
-
-/**
- * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.
- * @param fundCode
- */
-/*
-    @Get('fund/:fundCode')
-    @ApiOperation({
-        summary: 'Return a list of all OPEN products for a single fund.',
-        description: 'Return a list of all OPEN products for a single fund.  Result includes all sub-brands.',
-    })
-    @ApiParam({
-        name: 'fundCode',
-        description: 'Fund code.',
-        example: 'NIB',
-        required: true,
-    })
-    listForFundOrBrand(
-        @Param('fundCode') fundCode: string,
-    ) {
-        return this.productService.findByFund(fundCode);
-    }
-}
-*/
-
-/**
- * **ProductSearchController** provides access to product search.
- */
-/*
-@ApiTags('Product Search')
-@Controller('product-search')
-export class ProductSearchController {
-
-    constructor(private readonly ProductSearchService: ProductsSearchService) {
-    }
-
-    @Get('dataset')
-    @ApiOperation({
-        summary: 'Return dataset of product titles and product codes with searchable attributes.',
-        description: 'Return a list of matching products by title.',
-    })
-    listDataset() {
-        return this.ProductSearchService.getDataset();
-    }
-}
-*/
 
 /**
  * **ProductServicesController** provides access to product services.

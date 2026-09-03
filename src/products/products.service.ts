@@ -4,10 +4,10 @@
  * author: V. Puska
  * date: 03-Jan-2025
  */
-import { Readable } from 'stream';
+
 import { Injectable, Logger, StreamableFile } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindOptionsSelect, MoreThanOrEqual, Repository } from 'typeorm';
 
 import { ProductGroup, ProductVariant, SerializedProductGroup } from 'phi-common';
 
@@ -19,7 +19,7 @@ import { SystemService } from '../system/system.service';
 import { CacheMode, CacheService } from '../cache/cache.service';
 import { createReadStream } from 'node:fs';
 
-const LIST_FIELDS = [
+const PRODUCT_FIELDS = [
     'code',
     'name',
     'fundCode',
@@ -50,27 +50,19 @@ const LIST_FIELDS = [
     'services',
 ];
 
-
-/**
- * Convert data into a Readable JSON stream.
- * Arrays are yielded item by item to prevent large memory allocations.
- * @param data The data to convert to a JSON readable stream.
- */
-export function jsonStream(data: any): Readable {
-    console.log("Records =", data.length)
-    function* generate() {
-        yield '[';
-        for (let i = 0; i < data.length; i++) {
-            if (i > 0) {
-                yield ',';
-            }
-            yield JSON.stringify(data[i]);
-        }
-        yield ']';
-    }
-    return Readable.from(generate(), { objectMode: false });
-}
-
+const PRODUCT_GROUP_FIELDS = [
+    'name',
+    'fundCode',
+    'brands',
+    'type',
+    'status',
+    'isCorporate',
+    'accommodationType',
+    'hospitalTier',
+    'onlyAvailableWith',
+    'onlyAvailableWithProducts',
+    'services'
+]
 
 /**
  * **ProductService**
@@ -84,7 +76,6 @@ export class ProductsService {
     private logger = new Logger(ProductsService.name);
 
     constructor(
-        @InjectDataSource() private readonly dataSource: DataSource,
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>,
         @InjectRepository(HealthService)
@@ -99,6 +90,7 @@ export class ProductsService {
 
     /**
      * Check the last import run time stamp every 15 minutes.  Called directly by the constructor and scheduled by NestJS.
+     * @note There are no longer any queries that are executed by the server that need the timestamp, so the regular update is not necessary.
      */
     @Interval(15 * 60 * 1000)
     updateTimeStamp() {
@@ -122,7 +114,7 @@ export class ProductsService {
      */
     async findOne(fundCode: string, productCode: string) {
         return await this.productRepository.findOne({
-            select: LIST_FIELDS as FindOptionsSelect<Product>,
+            select:  PRODUCT_FIELDS as FindOptionsSelect<Product>,
             where: {
                 fundCode: fundCode,
                 code: productCode,
@@ -131,138 +123,42 @@ export class ProductsService {
     }
 
     /**
-     * List OPEN products extracting matching policies for state/adults/dependants.
-     * @param state `NSW | VIC | QLD | TAS | SA | WA | NT`
-     * @param adultsCovered `0 | 1 | 2`
-     * @param dependantCover  Whether dependant cover required
+     * Create a product dataset structured into {@link ProductGroup} objects.  An array of {@link ProductVariant} objects
+     * is added to each {@link ProductGroup}.
      */
-    async findByMarketSegment(
-        state: string,
-        adultsCovered: 0 | 1 | 2,
-        dependantCover: boolean,
-    ) {
-        const filter = {
-            state: In(['ALL', state]),
-            adultsCovered: adultsCovered,
-            dependantCover: dependantCover,
-            status: 'Open',
-            timeStamp: MoreThanOrEqual(this.timeStamp),
-        };
-
-        return await this.productRepository.find({
-            select: LIST_FIELDS as FindOptionsSelect<Product>,
-            where: filter,
-        });
-    }
-
-    /**
-     * List all OPEN products table extracting policies for a single fund or brand.  Includes corporate products.  If
-     * querying for a fund, all brand products are included.
-     * The fundOrBrandCode can be a:
-     * - a fund: E.g. `ACA`
-     * - a brand: E.g. `NIB01`
-     *
-     *
-     * @param fundCode
-     */
-    async findByFund(fundCode: string) {
-        return await this.productRepository.find({
-            select: LIST_FIELDS as FindOptionsSelect<Product>,
-            where: {
-                fundCode: fundCode,
-                status: 'Open',
-                timeStamp: MoreThanOrEqual(this.timeStamp),
-            },
-        });
-    }
-
-    /**
-     * List all OPEN products table extracting policies for a single product name.  Includes corporate products.  If
-     * querying for a fund, all brand products are included.
-     * @param title The product name to search for (exact match).
-     * @param fundOrBrandCode Options fund or brand code.
-     */
-    async findByTitle(title: string, fundOrBrandCode: string = null) {
-        const where = {
-            name: title,
-            timeStamp: MoreThanOrEqual(this.timeStamp),
-        };
-        if (fundOrBrandCode) {
-            where['fundCode'] = fundOrBrandCode.substring(0, 3);
-            where['fundBrandCode'] = fundOrBrandCode;
-        }
-        return await this.productRepository.find({
-            select: LIST_FIELDS as FindOptionsSelect<Product>,
-            where: where,
-        });
-    }
-
-    async createProductCache() {
+    async createProductDataset() {
         const groups: SerializedProductGroup[] = [];
 
+        // query the distinct groups from the database
         const groupsRaw = await this.productRepository
             .createQueryBuilder()
-            .select([
-                'name',
-                'fundCode',
-                'brands',
-                'type',
-                'status',
-                'isCorporate',
-                'accommodationType',
-                'hospitalTier',
-                'onlyAvailableWith',
-                'onlyAvailableWithProducts',
-                'services'
-            ])
+            .select(PRODUCT_GROUP_FIELDS)
             .distinct(true)
             .where({
                 timeStamp: MoreThanOrEqual(this.timeStamp)
             })
-            .orderBy({
-                name: 'ASC',
-                fundCode: 'ASC',
-                brands: 'ASC',
-                type: 'ASC',
-                status: 'ASC',
-                isCorporate: 'ASC',
-                accommodationType: 'ASC',
-                hospitalTier: 'ASC',
-                onlyAvailableWith: 'ASC',
-                onlyAvailableWithProducts: 'ASC',
-                services: 'ASC',
-            })
-            .getRawMany()
-        ;
+            .orderBy(PRODUCT_GROUP_FIELDS.reduce((obj, field) => {
+                obj[field] = 'ASC';
+                return obj;
+            }, {}))
+            .getRawMany();
 
         for (const group of groupsRaw) {
-
+            // initialise a new group
             const thisGroup = ProductGroup.createFromObject(group);
-
-            const rows = await this.productRepository.find({
-                select: LIST_FIELDS as FindOptionsSelect<Product>,
+            // find corresponding products
+            const products = await this.productRepository.find({
+                select:  PRODUCT_FIELDS as FindOptionsSelect<Product>,
                 where: {
-                    name: group.name,
-                    fundCode: group.fundCode,
-                    brands: group.brands,
-                    type: group.type,
-                    status: group.status,
-                    isCorporate: group.isCorporate,
-                    accommodationType: group.accommodationType,
-                    hospitalTier: group.hospitalTier,
-                    onlyAvailableWith: group.onlyAvailableWith,
-                    onlyAvailableWithProducts: group.onlyAvailableWithProducts,
-                    services: group.services,
+                    ...group,
                     timeStamp: MoreThanOrEqual(this.timeStamp)
                 }
             });
-
-            for (const row of rows) {
-                thisGroup.addVariant(
-                    ProductVariant.createFromObject(row).serialize()
-                );
+            // add each product variant to the group
+            for (const product of products) {
+                thisGroup.addVariant(ProductVariant.createFromObject(product).serialize())
             }
-
+            // save the group
             groups.push(thisGroup.serialize());
         }
 
@@ -273,14 +169,15 @@ export class ProductsService {
         );
     }
 
-    streamProductCache() {
+    /**
+     * Get the product dataset as a stream.
+     */
+    streamProductDataset() {
         const cacheDirectory = process.env.CACHE_DIR || 'cache';
         const file = createReadStream(`${cacheDirectory}/products/dataset`);
         return new StreamableFile(file, {
             type: 'application/json',
-            disposition: 'inline',
-            // If you want to define the Content-Length value to another value instead of file's length:
-            // length: 123,
+            disposition: 'inline'
         });
     }
 
