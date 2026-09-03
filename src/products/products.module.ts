@@ -28,7 +28,7 @@ import { FundsModule } from '../funds/funds.module';
         TypeOrmModule.forFeature([Product, HealthService, HospitalTier]),
         FundsModule,
         CacheModule,
-        SystemModule,
+        SystemModule
     ],
     exports: [TypeOrmModule, ProductsService, ProductsLoadService],
     providers: [ProductsService, ProductsLoadService],

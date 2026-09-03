@@ -26,7 +26,7 @@ export class FundsService {
     /**
      * Return all fund records.
      */
-    async findAll(): Promise<object[]> {
+    async findAll(): Promise<Fund[]> {
         return await this.fundRepository.find({
             order: { code: 'asc' },
         });

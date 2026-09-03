@@ -6,8 +6,8 @@
  */
 import { Readable } from 'stream';
 import { Injectable, Logger, StreamableFile } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, FindOptionsSelect, In, MoreThanOrEqual, Repository } from 'typeorm';
 
 import { ProductGroup, ProductVariant, SerializedProductGroup } from 'phi-common';
 
@@ -79,21 +79,18 @@ export function jsonStream(data: any): Readable {
 export class ProductsService {
     // Latest import time stamp.  Used to determine which products to return from the database.
     private timeStamp = new Date(0);
-    private productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE ||
-        'none') as CacheMode;
-    private productDatasetCacheMode: CacheMode = (process.env
-        .PRODUCT_DATASET_CACHE || 'none') as CacheMode;
+    private productXmlCacheMode: CacheMode = (process.env.PRODUCT_XML_CACHE ||'none') as CacheMode;
+    private productDatasetCacheMode: CacheMode = (process.env.PRODUCT_DATASET_CACHE || 'none') as CacheMode;
     private logger = new Logger(ProductsService.name);
-    groups: SerializedProductGroup[] = [];
 
     constructor(
+        @InjectDataSource() private readonly dataSource: DataSource,
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>,
         @InjectRepository(HealthService)
         private readonly healthServiceRepository: Repository<HealthService>,
         @InjectRepository(HospitalTier)
         private readonly hospitalTierRepository: Repository<HospitalTier>,
-        //private readonly productCacheService: ProductsCacheService,
         private readonly systemService: SystemService,
         private readonly cacheService: CacheService,
     ) {
@@ -201,14 +198,28 @@ export class ProductsService {
     }
 
     async createProductCache() {
-        //const groups: SerializedProductGroup[] = [];
+        const groups: SerializedProductGroup[] = [];
 
-        const rows = await this.productRepository.find({
-            select: LIST_FIELDS as FindOptionsSelect<Product>,
-            where: {
+        const groupsRaw = await this.productRepository
+            .createQueryBuilder()
+            .select([
+                'name',
+                'fundCode',
+                'brands',
+                'type',
+                'status',
+                'isCorporate',
+                'accommodationType',
+                'hospitalTier',
+                'onlyAvailableWith',
+                'onlyAvailableWithProducts',
+                'services'
+            ])
+            .distinct(true)
+            .where({
                 timeStamp: MoreThanOrEqual(this.timeStamp)
-            },
-            order: {
+            })
+            .orderBy({
                 name: 'ASC',
                 fundCode: 'ASC',
                 brands: 'ASC',
@@ -220,37 +231,46 @@ export class ProductsService {
                 onlyAvailableWith: 'ASC',
                 onlyAvailableWithProducts: 'ASC',
                 services: 'ASC',
-            }
-        });
+            })
+            .getRawMany()
+        ;
 
-        function* generate() {
-            yield '[';
-            let currentGroup = ProductGroup.createFromObject(rows[0]);
-            let comma = '';
-            for (let i = 0; i < rows.length; i++) {
-                const group = ProductGroup.createFromObject(rows[i]);
-                const variant = ProductVariant.createFromObject(rows[i]).serialize();
-                if (group.isSameAs(currentGroup)) {
-                    currentGroup.addVariant(variant);
-                } else {
-                    yield comma;
-                    yield JSON.stringify(currentGroup.serialize());
-                    comma = ',';
-                    currentGroup = group;
-                    currentGroup.addVariant(variant);
+        for (const group of groupsRaw) {
+
+            const thisGroup = ProductGroup.createFromObject(group);
+
+            const rows = await this.productRepository.find({
+                select: LIST_FIELDS as FindOptionsSelect<Product>,
+                where: {
+                    name: group.name,
+                    fundCode: group.fundCode,
+                    brands: group.brands,
+                    type: group.type,
+                    status: group.status,
+                    isCorporate: group.isCorporate,
+                    accommodationType: group.accommodationType,
+                    hospitalTier: group.hospitalTier,
+                    onlyAvailableWith: group.onlyAvailableWith,
+                    onlyAvailableWithProducts: group.onlyAvailableWithProducts,
+                    services: group.services,
+                    timeStamp: MoreThanOrEqual(this.timeStamp)
                 }
+            });
+
+            for (const row of rows) {
+                thisGroup.addVariant(
+                    ProductVariant.createFromObject(row).serialize()
+                );
             }
-            yield ']';
+
+            groups.push(thisGroup.serialize());
         }
 
-        this.logger.log(`PRODUCT_DATASET_CACHE=${this.productDatasetCacheMode}`);
-        if (this.productDatasetCacheMode !== 'none') {
-            this.cacheService.writeCache(
-                'products/dataset',
-                this.productDatasetCacheMode,
-                Readable.from(generate(), { objectMode: false })
-            );
-        }
+        this.cacheService.writeCache(
+            'products/dataset',
+            this.productDatasetCacheMode,
+            JSON.stringify(groups)
+        );
     }
 
     streamProductCache() {
